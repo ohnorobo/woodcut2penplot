@@ -23,9 +23,9 @@ class SVGCombiner:
 
     # Layer labels matching the working file convention (number + letter)
     CHANNEL_LABELS = {
-        "cyan": "1 C",
+        "cyan": "3 C",
         "magenta": "2 M",
-        "yellow": "3 Y",
+        "yellow": "1 Y",
         "black": "4 K",
     }
 
