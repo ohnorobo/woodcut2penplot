@@ -16,13 +16,13 @@ async def process_image(
     threshold: int = Form(128),
     invert: bool = Form(False),
     upscale: int = Form(3),
-    blur: float = Form(1.0),
-    despeckle: int = Form(4),
-    prune: float = Form(4.0),
+    blur: float = Form(0.0),
+    despeckle: int = Form(1),
+    prune: float = Form(2.0),
     max_turn: float = Form(60),
     smoothing: float = Form(1.0),
     simplify: float = Form(0.15),
-    min_length: float = Form(3.0),
+    min_length: float = Form(1.5),
 ):
     """
     Trace the centerlines of an uploaded image into an SVG.
@@ -32,13 +32,13 @@ async def process_image(
         threshold: Gray level 0-255, darker pixels count as ink (default: 128)
         invert: Trace light lines on a dark background (default: false)
         upscale: Internal resolution multiplier 1-6 (default: 3)
-        blur: Blur radius in pixels applied before thresholding (default: 1.0)
-        despeckle: Ignore specks and holes up to this area in pixels (default: 4)
-        prune: Remove dead-end branches shorter than this many pixels (default: 4)
+        blur: Blur radius in pixels applied before thresholding (default: 0)
+        despeckle: Ignore specks and holes up to this area in pixels (default: 1)
+        prune: Remove dead-end branches shorter than this many pixels (default: 2)
         max_turn: Largest turn in degrees allowed through a junction (default: 60)
         smoothing: Smoothing sigma along each stroke in pixels (default: 1.0)
         simplify: Point reduction tolerance in pixels (default: 0.15)
-        min_length: Drop strokes shorter than this many pixels (default: 3)
+        min_length: Drop strokes shorter than this many pixels (default: 1.5)
 
     Returns:
         JSON response with the SVG string and metadata

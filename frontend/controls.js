@@ -14,13 +14,13 @@ const TRACE_DEFAULTS = {
   threshold: 128,
   invert: false,
   upscale: 3,
-  blur: 1.0,
-  despeckle: 4,
-  prune: 4.0,
+  blur: 0,
+  despeckle: 1,
+  prune: 2,
   max_turn: 60,
   smoothing: 1.0,
   simplify: 0.15,
-  min_length: 3.0,
+  min_length: 1.5,
 };
 
 window.params = {

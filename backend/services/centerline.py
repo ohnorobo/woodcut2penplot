@@ -52,8 +52,8 @@ def binarize(
     threshold: int = 128,
     invert: bool = False,
     upscale: int = 3,
-    blur: float = 1.0,
-    despeckle: int = 4,
+    blur: float = 0.0,
+    despeckle: int = 1,
 ) -> np.ndarray:
     """
     Convert an image to a boolean ink mask.
@@ -321,13 +321,13 @@ def trace_centerlines(
     threshold: int = 128,
     invert: bool = False,
     upscale: int = 3,
-    blur: float = 1.0,
-    despeckle: int = 4,
-    prune: float = 4.0,
+    blur: float = 0.0,
+    despeckle: int = 1,
+    prune: float = 2.0,
     max_turn: float = 60,
     smoothing: float = 1.0,
     simplify: float = 0.15,
-    min_length: float = 3.0,
+    min_length: float = 1.5,
 ) -> List[np.ndarray]:
     """
     Trace the centerlines of an image.

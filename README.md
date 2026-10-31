@@ -98,14 +98,14 @@ python -m backend.scripts.generate_default_cache
 |-----------|---------|--------|
 | Threshold | 128 | Gray level below which a pixel is ink |
 | Invert | off | Trace light lines on a dark background |
-| Blur | 1.0 | Blur radius before thresholding; hides paper grain |
-| Despeckle | 4 | Ignore specks and holes up to this area (px) |
+| Blur | 0 | Blur radius before thresholding; hides paper grain |
+| Despeckle | 1 | Ignore specks and holes up to this area (px) |
 | Upscale | 3 | Internal resolution multiplier; smoother, slower |
-| Prune Spurs | 4 | Remove dead-end branches shorter than this (px) |
+| Prune Spurs | 2 | Remove dead-end branches shorter than this (px) |
 | Max Turn | 60° | Largest turn allowed when joining strokes through a junction |
 | Smoothing | 1.0 | Smoothing along each stroke |
 | Simplify | 0.15 | Point reduction tolerance (px) |
-| Min Length | 3 | Drop strokes shorter than this (px) |
+| Min Length | 1.5 | Drop strokes shorter than this (px) |
 | Stroke Width | 1.0 | Display/export line width, no reprocess needed |
 
 ## License
