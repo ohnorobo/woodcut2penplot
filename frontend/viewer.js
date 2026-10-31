@@ -1,5 +1,5 @@
 /**
- * Simple CMYK visualization without p5.js
+ * Simple trace visualization without p5.js
  * Just inserts SVG directly into the DOM
  */
 
@@ -10,21 +10,20 @@ let currentImageHeight = 0;
  * Initialize the visualization
  */
 function setup() {
-  setupCMYKGUI();
+  setupGUI();
 }
 
 /**
- * Render CMYK layers by inserting SVG into DOM
+ * Render the traced SVG by inserting it into the DOM
  */
-function renderCMYKLayers() {
-  if (!window.cmykData || !window.cmykData.result) return;
+function renderTrace() {
+  if (!window.traceData || !window.traceData.result) return;
 
-  const container = document.getElementById('cmyk-container');
-  const result = window.cmykData.result;
+  const container = document.getElementById('trace-container');
+  const result = window.traceData.result;
   const metadata = result.metadata;
 
   // Get processing dimensions (resized) for correct coordinate space
-  // Fall back to original_dimensions for backwards compatibility
   const processingDims = metadata.processing_dimensions || metadata.original_dimensions;
   currentImageWidth = processingDims[0];
   currentImageHeight = processingDims[1];
@@ -35,9 +34,9 @@ function renderCMYKLayers() {
   const displayWidth = currentImageWidth * scale;
   const displayHeight = currentImageHeight * scale;
 
-  // Parse the combined SVG
+  // Parse the SVG
   const parser = new DOMParser();
-  const svgDoc = parser.parseFromString(result.combined_svg, 'image/svg+xml');
+  const svgDoc = parser.parseFromString(result.svg, 'image/svg+xml');
   const svgElement = svgDoc.documentElement;
 
   // Set display dimensions with viewBox for proper scaling
@@ -50,41 +49,20 @@ function renderCMYKLayers() {
   container.innerHTML = '';
   container.appendChild(svgElement);
 
-  // Apply stroke widths from current parameters
+  // Apply stroke width from current parameters
   updateStrokeWidths();
 }
 
 /**
- * Update stroke widths for all CMYK layers
+ * Update stroke width for all paths
  */
 function updateStrokeWidths() {
-  const svg = document.querySelector('#cmyk-container svg');
+  const svg = document.querySelector('#trace-container svg');
   if (!svg) return;
 
-  // Update each layer with its corresponding width
-  const widthMap = {
-    'cyan-layer': window.cmykParams.width_c,
-    'magenta-layer': window.cmykParams.width_m,
-    'yellow-layer': window.cmykParams.width_y,
-    'black-layer': window.cmykParams.width_k
-  };
-
-  for (const [layerId, width] of Object.entries(widthMap)) {
-    const layer = svg.querySelector(`#${layerId}`);
-    if (layer) {
-      const paths = layer.querySelectorAll('path');
-      paths.forEach(path => {
-        path.setAttribute('stroke-width', width);
-      });
-    }
-  }
-}
-
-/**
- * Redraw function (called when visibility toggles change)
- */
-function redraw() {
-  renderCMYKLayers();
+  svg.querySelectorAll('path').forEach(path => {
+    path.setAttribute('stroke-width', window.params.stroke_width);
+  });
 }
 
 // Initialize when DOM is ready

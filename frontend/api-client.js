@@ -1,48 +1,33 @@
 /**
- * API client for communicating with the CMYK Splitter backend
+ * API client for communicating with the woodcut2penplot backend
  */
 
-class CMYKAPIClient {
+class TraceAPIClient {
   constructor() {
     // Auto-detect backend based on environment
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       // Running locally
       this.baseURL = 'http://localhost:8000';
     } else {
-      // Running on GitHub Pages - use deployed backend
-      this.baseURL = 'https://cmyk-splitter.onrender.com';
+      // Deployed backend (not set up yet)
+      this.baseURL = 'https://woodcut2penplot.onrender.com';
     }
   }
 
   /**
-   * Process an image through the CMYK splitter
+   * Trace an image's centerlines through the backend
    *
    * @param {File} imageFile - The image file to process
-   * @param {Object} params - Processing parameters
-   * @param {number} params.threshold_c - Cyan threshold 0-255 (default: 127)
-   * @param {number} params.threshold_m - Magenta threshold 0-255 (default: 127)
-   * @param {number} params.threshold_y - Yellow threshold 0-255 (default: 165)
-   * @param {number} params.threshold_k - Black threshold 0-255 (default: 127)
-   * @param {number} params.divisor_c - Cyan channel divisor (default: 50)
-   * @param {number} params.divisor_m - Magenta channel divisor (default: 50)
-   * @param {number} params.divisor_y - Yellow channel divisor (default: 50)
-   * @param {number} params.divisor_k - Black channel divisor (default: 25)
-   * @param {number} params.skip_paths_longer_than - Max continuous line distance (default: 25)
-   * @returns {Promise<Object>} Response with cyan_svg, magenta_svg, yellow_svg, black_svg
+   * @param {Object} params - Trace parameters, see TRACE_DEFAULTS in controls.js
+   * @returns {Promise<Object>} Response with result.svg and result.metadata
    */
   async processImage(imageFile, params = {}) {
     // Build FormData with file and parameters
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('threshold_c', params.threshold_c !== undefined ? params.threshold_c : 128);
-    formData.append('threshold_m', params.threshold_m !== undefined ? params.threshold_m : 128);
-    formData.append('threshold_y', params.threshold_y !== undefined ? params.threshold_y : 90);
-    formData.append('threshold_k', params.threshold_k !== undefined ? params.threshold_k : 128);
-    formData.append('divisor_c', params.divisor_c || 50);
-    formData.append('divisor_m', params.divisor_m || 50);
-    formData.append('divisor_y', params.divisor_y || 50);
-    formData.append('divisor_k', params.divisor_k || 25);
-    formData.append('skip_paths_longer_than', params.skip_paths_longer_than || 25);
+    for (const [key, value] of Object.entries(params)) {
+      formData.append(key, value);
+    }
 
     try {
       const response = await fetch(`${this.baseURL}/api/process-image`, {
@@ -63,14 +48,14 @@ class CMYKAPIClient {
   }
 
   /**
-   * Get cached response for default urn.png image (fast path)
+   * Get cached response for the default image (fast path)
    * Loads from local JSON file, no backend required
    *
-   * @returns {Promise<Object>} Cached response with combined_svg and metadata
+   * @returns {Promise<Object>} Cached response with svg and metadata
    */
-  async getCachedUrnResponse() {
+  async getCachedDefaultResponse() {
     try {
-      const response = await fetch('frontend/cache/urn_default.json');
+      const response = await fetch('frontend/cache/default.json');
 
       if (!response.ok) {
         throw new Error(`Failed to load cached response: HTTP ${response.status}`);
@@ -78,7 +63,7 @@ class CMYKAPIClient {
 
       return await response.json();
     } catch (error) {
-      console.error('Cached urn fetch failed:', error);
+      console.error('Cached default fetch failed:', error);
       throw error;
     }
   }
@@ -100,4 +85,4 @@ class CMYKAPIClient {
 }
 
 // Export for use in other modules
-window.CMYKAPIClient = CMYKAPIClient;
+window.TraceAPIClient = TraceAPIClient;

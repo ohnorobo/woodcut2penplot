@@ -1,4 +1,4 @@
-"""API routes for CMYK image processing."""
+"""API routes for centerline image tracing."""
 
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from PIL import Image
@@ -13,39 +13,44 @@ router = APIRouter()
 @router.post("/process-image")
 async def process_image(
     image: UploadFile = File(...),
-    divisor_c: int = Form(50),
-    divisor_m: int = Form(50),
-    divisor_y: int = Form(50),
-    divisor_k: int = Form(25),
-    skip_paths_longer_than: int = Form(25),
-    threshold_c: int = Form(128),
-    threshold_m: int = Form(128),
-    threshold_y: int = Form(90),
-    threshold_k: int = Form(128),
+    threshold: int = Form(128),
+    invert: bool = Form(False),
+    upscale: int = Form(3),
+    blur: float = Form(1.0),
+    despeckle: int = Form(4),
+    prune: float = Form(4.0),
+    max_turn: float = Form(60),
+    smoothing: float = Form(1.0),
+    simplify: float = Form(0.15),
+    min_length: float = Form(3.0),
 ):
     """
-    Process an uploaded image into CMYK stringy SVG layers.
+    Trace the centerlines of an uploaded image into an SVG.
 
     Args:
         image: Uploaded image file (JPEG, PNG, GIF)
-        divisor_c: Sampling divisor for cyan channel (default: 50)
-        divisor_m: Sampling divisor for magenta channel (default: 50)
-        divisor_y: Sampling divisor for yellow channel (default: 50)
-        divisor_k: Sampling divisor for black channel (default: 25)
-        skip_paths_longer_than: Max distance for continuous lines (default: 25)
-        threshold_c: Cyan threshold 0-255, higher = more ink (default: 128)
-        threshold_m: Magenta threshold 0-255, higher = more ink (default: 128)
-        threshold_y: Yellow threshold 0-255, higher = more ink (default: 90)
-        threshold_k: Black threshold 0-255, higher = more ink (default: 128)
+        threshold: Gray level 0-255, darker pixels count as ink (default: 128)
+        invert: Trace light lines on a dark background (default: false)
+        upscale: Internal resolution multiplier 1-6 (default: 3)
+        blur: Blur radius in pixels applied before thresholding (default: 1.0)
+        despeckle: Ignore specks and holes up to this area in pixels (default: 4)
+        prune: Remove dead-end branches shorter than this many pixels (default: 4)
+        max_turn: Largest turn in degrees allowed through a junction (default: 60)
+        smoothing: Smoothing sigma along each stroke in pixels (default: 1.0)
+        simplify: Point reduction tolerance in pixels (default: 0.15)
+        min_length: Drop strokes shorter than this many pixels (default: 3)
 
     Returns:
-        JSON response with SVG strings for each CMYK channel
+        JSON response with the SVG string and metadata
     """
     start_time = time.time()
     try:
         # Validate file type
         if not image.content_type or not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Invalid image format")
+
+        if not 1 <= upscale <= 6:
+            raise HTTPException(status_code=400, detail="upscale must be between 1 and 6")
 
         # Read uploaded image
         image_data = await image.read()
@@ -54,15 +59,16 @@ async def process_image(
         # Process image through service layer
         result = process_image_to_svg(
             pil_image=pil_image,
-            divisor_c=divisor_c,
-            divisor_m=divisor_m,
-            divisor_y=divisor_y,
-            divisor_k=divisor_k,
-            skip_paths_longer_than=skip_paths_longer_than,
-            threshold_c=threshold_c,
-            threshold_m=threshold_m,
-            threshold_y=threshold_y,
-            threshold_k=threshold_k
+            threshold=threshold,
+            invert=invert,
+            upscale=upscale,
+            blur=blur,
+            despeckle=despeckle,
+            prune=prune,
+            max_turn=max_turn,
+            smoothing=smoothing,
+            simplify=simplify,
+            min_length=min_length,
         )
 
         # Log completion
@@ -74,6 +80,8 @@ async def process_image(
             "result": result,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         # Log error and return failure response
         elapsed_time = time.time() - start_time

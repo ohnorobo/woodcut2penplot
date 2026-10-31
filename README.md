@@ -1,21 +1,38 @@
-# CMYK Splitter
+# woodcut2penplot
 
-A web application that converts images into CMYK color-separated halftone SVG drawings suitable for pen plotting. Upload an image and get a layered SVG with four color channels (Cyan, Magenta, Yellow, Black) that can be plotted or edited.
+A web application that turns line art — woodcuts, engravings, ink drawings — into single-stroke SVG suitable for pen plotting. Upload an image and get an SVG where every line in the drawing becomes one pen stroke down its centre, instead of an outline around it.
+
+Started from [cmyk-splitter](https://github.com/ohnorobo/cmyk-splitter), which handles the web part the same way.
 
 ## Features
 
-- **CMYK Color Separation with GCR** - Properly splits images into 4 color channels with Gray Component Replacement
-- **Halftone Dot Visualization** - Converts each channel into stippled dots for clean plotting
-- **Per-Channel Control** - Independent divisor settings for each color (C/M/Y default: 50, K default: 25 for finer detail)
-- **Layered SVG Output** - Single SVG file with separate groups for each color channel
-- **Real-Time Preview** - See all 4 colored layers overlaid with proper multiply blend mode
-- **Easy Export** - Download combined SVG with all layers preserved
+- **Centerline tracing** - Skeletonizes the ink, so each drawn line is plotted once rather than outlined twice
+- **Tunable ink detection** - Threshold, invert, blur, despeckle and internal upscale
+- **Stroke cleanup** - Prune spurs, join strokes through junctions, smooth and simplify
+- **Inkscape layer output** - Single SVG with a layer group, sized in mm from the image DPI (or fit to A4)
+- **Real-time preview** - Adjust stroke width without reprocessing
+- **Easy export** - Download the SVG ready to plot
+
+## How the trace works
+
+`backend/services/centerline.py` is the whole algorithm and is meant to be modified:
+
+1. grayscale → upscale → blur → threshold → despeckle (`binarize`)
+2. `skimage.morphology.skeletonize` thins the ink to 1px
+3. `build_graph` turns the skeleton into nodes (ends, junctions) and edges (pixel chains)
+4. `prune_spurs` removes short dead-end whiskers
+5. `join_strokes` pairs up edges through each junction by how straight the pen would travel
+6. `smooth_stroke` and `simplify_stroke` tidy each polyline
+
+This is the same job `autotrace -centerline` does for the
+[inkscape-centerline-trace](https://github.com/fablabnbg/inkscape-centerline-trace) extension,
+written in Python/NumPy so each step can be swapped out.
 
 ## Architecture
 
-- **Backend**: FastAPI (Python) - Handles CMYK splitting with GCR and halftone dot generation
+- **Backend**: FastAPI (Python) - Runs the trace
 - **Frontend**: Vanilla JavaScript + dat.GUI - Interactive visualization and controls
-- **Image Processing**: PIL/Pillow + NumPy for CMYK conversion with GCR, random dot sampling
+- **Image Processing**: Pillow + NumPy + SciPy + scikit-image
 
 ## Setup
 
@@ -27,7 +44,7 @@ A web application that converts images into CMYK color-separated halftone SVG dr
 ### 1. Backend Setup
 
 ```bash
-cd cmyk-splitter/
+cd woodcut2penplot/
 
 # Create virtual environment with Python 3.12
 python3.12 -m venv venv
@@ -50,208 +67,47 @@ You'll need two terminal windows running simultaneously.
 ### Terminal 1: Start Backend Server
 
 ```bash
-cd cmyk-splitter/
-
-# Activate virtual environment
+cd woodcut2penplot/
 source venv/bin/activate
-
-# Start FastAPI server
 uvicorn backend.main:app --reload --port 8000
 ```
 
-The backend will be available at `http://localhost:8000`
-
-You should see:
-```
-INFO:     Uvicorn running on http://127.0.0.1:8000
-INFO:     Application startup complete.
-```
-
-**Debug Mode (Optional):**
-
-To enable debug mode with verbose logging and file output:
-
-```bash
-# Set DEBUG environment variable before starting the server
-DEBUG=1 uvicorn backend.main:app --reload --port 8000
-```
-
-When debug mode is enabled, the backend will:
-- Print detailed processing information to console
-- Save raw CMYK channel images (before thresholding) to `backend/services/debug_files/`
-- Save bilevel channel images (after thresholding) to `backend/services/debug_files/`
-- Save individual channel SVG files to `backend/services/debug_files/`
-
-All debug files are timestamped (format: `YYYYMMDD_HHMMSS_*`)
+Set `DEBUG=1` to save the thresholded bitmap and SVG to `backend/services/debug_files/`.
 
 ### Terminal 2: Start Frontend Server
 
 ```bash
-cd cmyk-splitter/
-
-# Start simple HTTP server (serves from root where index.html is)
+cd woodcut2penplot/
 python3 -m http.server 8080
 ```
 
-The frontend will be available at `http://localhost:8080`
+Then open http://localhost:8080
 
-### 3. Open in Browser
+### Regenerating the default image cache
 
-Navigate to `http://localhost:8080` in your web browser.
+The default image is served from a cached response so the page loads without
+waiting on the backend. After changing the algorithm or its defaults, run:
 
-**Note:** The frontend is split between `index.html` (at root) and `frontend/` (containing JS/CSS/libraries).
-
-## Usage
-
-1. **Upload Image**
-   - Click "📁 Select Image" in the dat.GUI controls (top right)
-   - Choose an image file (JPEG, PNG, GIF)
-   - Wait for processing (status shown in top-left panel)
-
-2. **View Results**
-   - Four CMYK layers will appear with colors:
-     - Cyan: `rgb(0, 255, 255)`
-     - Magenta: `rgb(255, 0, 255)`
-     - Yellow: `rgb(255, 255, 0)`
-     - Black: `rgb(0, 0, 0)`
-   - All layers use multiply blend mode for proper color mixing
-
-3. **Adjust Parameters**
-   - **Divisor Sliders** - Control dot density per channel (higher = fewer dots, faster)
-     - Cyan/Magenta/Yellow: 10-200 (default 50)
-     - Black: 10-200 (default 25 for more detail)
-   - Click "🔄 Reprocess" to regenerate with new settings
-
-4. **Export SVG File**
-   - Click "Export SVG" to download combined SVG with all 4 layers
-   - Each layer is in a separate group (cyan-layer, magenta-layer, yellow-layer, black-layer)
-   - SVG preserves original image dimensions
-
-## API Endpoints
-
-### `GET /health`
-Health check endpoint
-
-**Response:**
-```json
-{
-  "status": "healthy"
-}
+```bash
+python -m backend.scripts.generate_default_cache
 ```
 
-### `POST /api/process-image`
-Process image into CMYK halftone SVG with layered output
+## Parameters
 
-**Request:**
-- Content-Type: `multipart/form-data`
-- Body:
-  - `image`: File (JPEG, PNG, GIF)
-  - `divisor_c`: int (default 50) - Cyan dot density
-  - `divisor_m`: int (default 50) - Magenta dot density
-  - `divisor_y`: int (default 50) - Yellow dot density
-  - `divisor_k`: int (default 25) - Black dot density
-  - `skip_paths_longer_than`: int (default 25) - Unused for dot plotter
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| Threshold | 128 | Gray level below which a pixel is ink |
+| Invert | off | Trace light lines on a dark background |
+| Blur | 1.0 | Blur radius before thresholding; hides paper grain |
+| Despeckle | 4 | Ignore specks and holes up to this area (px) |
+| Upscale | 3 | Internal resolution multiplier; smoother, slower |
+| Prune Spurs | 4 | Remove dead-end branches shorter than this (px) |
+| Max Turn | 60° | Largest turn allowed when joining strokes through a junction |
+| Smoothing | 1.0 | Smoothing along each stroke |
+| Simplify | 0.15 | Point reduction tolerance (px) |
+| Min Length | 3 | Drop strokes shorter than this (px) |
+| Stroke Width | 1.0 | Display/export line width, no reprocess needed |
 
-**Response (200 OK):**
-```json
-{
-  "status": "completed",
-  "result": {
-    "combined_svg": "<svg width=\"1686\" height=\"2411\" xmlns=\"...\">
-      <g id=\"cyan-layer\" style=\"mix-blend-mode: multiply;\">
-        <circle cx=\"...\" cy=\"...\" r=\"...\" fill=\"rgb(0, 255, 255)\" />
-        ...
-      </g>
-      <g id=\"magenta-layer\" style=\"mix-blend-mode: multiply;\">...</g>
-      <g id=\"yellow-layer\" style=\"mix-blend-mode: multiply;\">...</g>
-      <g id=\"black-layer\" style=\"mix-blend-mode: multiply;\">...</g>
-    </svg>",
-    "metadata": {
-      "original_dimensions": [1686, 2411]
-    }
-  }
-}
-```
+## License
 
-## Project Structure
-
-```
-cmyk-splitter/
-├── backend/
-│   ├── main.py                 # FastAPI app entry point
-│   ├── config.py               # Configuration (debug mode, etc.)
-│   ├── requirements.txt        # Python dependencies
-│   ├── api/
-│   │   └── routes.py           # API endpoints
-│   └── services/
-│       ├── cmyk_splitter.py    # CMYK channel splitting with GCR
-│       ├── halftone_dots.py    # Halftone dot plotter
-│       ├── svg_combiner.py     # Combines channel SVGs into layered output
-│       └── stringy_plotter.py  # Continuous line path generation (alternative)
-├── frontend/
-│   ├── sketch.js               # CMYK visualization
-│   ├── svgtools.js             # SVG export utilities
-│   ├── api-client.js           # Frontend API communication
-│   ├── cmyk-controls.js        # dat.GUI controls
-│   ├── style.css               # Styling
-│   ├── lib/                    # Frontend libraries (dat.GUI)
-│   ├── static/                 # Static assets (default images)
-│   └── cache/                  # Cached responses (urn.png default)
-├── index.html                  # Main HTML page (at root for GitHub Pages)
-└── README.md                   # This file
-```
-
-## Algorithm Details
-
-### CMYK Splitting with GCR
-1. Convert RGB to CMY: `C = 1-R, M = 1-G, Y = 1-B`
-2. Calculate K (gray component): `K = min(C, M, Y)`
-3. Extract gray from CMY (Gray Component Replacement):
-   - `C = (C - K) / (1 - K)`
-   - `M = (M - K) / (1 - K)`
-   - `Y = (Y - K) / (1 - K)`
-4. Apply thresholds to create bilevel (black/white) images:
-   - Cyan: 50% threshold (127/255)
-   - Magenta: 50% threshold (127/255)
-   - Yellow: 65% threshold (165/255) - yellows need special handling
-   - Black: 50% threshold (127/255)
-
-### Halftone Dot Plotter
-1. Extract white pixels (ink areas) from bilevel image
-2. Randomly sample pixels up to max_dots (default 2000)
-3. Place SVG circles at sampled positions
-4. Combine all channel SVGs into single layered output with:
-   - Separate groups for each color
-   - Proper RGB colors applied
-   - Multiply blend mode for color mixing
-
-## Troubleshooting
-
-### Backend won't start
-- Make sure virtual environment is activated: `source venv/bin/activate`
-- Check Python version: `python --version` (should be 3.12 or 3.11)
-- Reinstall dependencies: `pip install -r backend/requirements.txt`
-
-### Frontend shows "Backend not available"
-- Verify backend is running on port 8000
-- Check CORS settings in `backend/main.py`
-- Try accessing `http://localhost:8000/health` directly
-
-### Processing is slow
-- Increase divisor values (fewer dots = faster processing)
-- HalftoneDotPlotter has a hard cap of 2000 dots per channel by default
-- Black channel typically needs lower divisor (more detail) than other channels
-
-## Development Notes
-
-- Backend uses **FastAPI** with async/await for potential future enhancements
-- Frontend is purely static - no build step required
-- CORS enabled for `localhost:8080` - update `backend/main.py` for other ports
-- GCR (Gray Component Replacement) implemented in pure Python using NumPy
-- Debug mode can be enabled with `DEBUG=1` environment variable - see "Running the Application" section
-
-## Credits
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/), [Pillow](https://python-pillow.org/), and [NumPy](https://numpy.org/)
-- dat.GUI for controls
-- Continuous line drawing algorithm inspired by [StringyPlotter](https://github.com/th0ma5w/StringyPlotter) by th0ma5w
+MIT

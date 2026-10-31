@@ -8,8 +8,8 @@ body {
     height: 100vh;
   }
   
-/* CMYK container - spans from header to bottom of viewport */
-#cmyk-container {
+/* Trace container - spans from header to bottom of viewport */
+#trace-container {
     position: fixed;
     top: 50px;
     left: 0;
@@ -22,7 +22,7 @@ body {
     overflow: hidden;
 }
 
-#cmyk-container svg {
+#trace-container svg {
     display: block;
     max-width: 100%;
     max-height: 100%;

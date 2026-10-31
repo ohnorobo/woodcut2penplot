@@ -1,18 +1,17 @@
-"""Image processing service for CMYK conversion and SVG generation."""
+"""Image processing service: centerline tracing and SVG generation."""
 
 from PIL import Image
 import os
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict
 
-from backend.services.cmyk_splitter import CMYKSplitter
-from backend.services.stringy_plotter import StringyPlotter
-from backend.services.svg_combiner import SVGCombiner
+from backend.services.centerline import trace_centerlines, binarize
+from backend.services.svg_writer import strokes_to_svg
 from backend.config import DEBUG, DEBUG_DIR
 
-# Maximum dimension for image processing (to improve performance)
-# Set to large value to effectively disable resizing (quality > speed for now)
-MAX_IMAGE_DIMENSION = 10000
+# Maximum dimension for image processing (to improve performance).
+# The tracer works at upscale x this resolution, so keep it moderate.
+MAX_IMAGE_DIMENSION = 1600
 
 
 def resize_image_if_needed(image: Image.Image, max_dimension: int = MAX_IMAGE_DIMENSION) -> Image.Image:
@@ -49,33 +48,35 @@ def resize_image_if_needed(image: Image.Image, max_dimension: int = MAX_IMAGE_DI
 
 def process_image_to_svg(
     pil_image: Image.Image,
-    divisor_c: int = 50,
-    divisor_m: int = 50,
-    divisor_y: int = 50,
-    divisor_k: int = 25,
-    skip_paths_longer_than: int = 25,
-    threshold_c: int = 128,
-    threshold_m: int = 128,
-    threshold_y: int = 90,
-    threshold_k: int = 128,
+    threshold: int = 128,
+    invert: bool = False,
+    upscale: int = 3,
+    blur: float = 1.0,
+    despeckle: int = 4,
+    prune: float = 4.0,
+    max_turn: float = 60,
+    smoothing: float = 1.0,
+    simplify: float = 0.15,
+    min_length: float = 3.0,
 ) -> Dict:
     """
-    Process a PIL Image into CMYK stringy SVG layers.
+    Process a PIL Image into a centerline-traced SVG.
 
     Args:
-        pil_image: PIL Image in RGB mode
-        divisor_c: Sampling divisor for cyan channel (default: 50)
-        divisor_m: Sampling divisor for magenta channel (default: 50)
-        divisor_y: Sampling divisor for yellow channel (default: 50)
-        divisor_k: Sampling divisor for black channel (default: 25)
-        skip_paths_longer_than: Max distance for continuous lines (default: 25)
-        threshold_c: Cyan threshold 0-255, higher = more ink (default: 128)
-        threshold_m: Magenta threshold 0-255, higher = more ink (default: 128)
-        threshold_y: Yellow threshold 0-255, higher = more ink (default: 90)
-        threshold_k: Black threshold 0-255, higher = more ink (default: 128)
+        pil_image: PIL Image in any mode
+        threshold: Gray level 0-255, darker pixels count as ink
+        invert: Trace light lines on a dark background instead
+        upscale: Internal resolution multiplier
+        blur: Gaussian blur radius applied before thresholding
+        despeckle: Ignore specks and holes up to this area in pixels
+        prune: Remove dead-end branches shorter than this many pixels
+        max_turn: Largest turn in degrees the pen may make through a junction
+        smoothing: Gaussian sigma applied along each stroke
+        simplify: Douglas-Peucker tolerance in pixels
+        min_length: Drop strokes shorter than this many pixels
 
     Returns:
-        Dict with combined_svg and metadata
+        Dict with svg and metadata
     """
     # Store original dimensions
     original_width, original_height = pil_image.size
@@ -98,97 +99,70 @@ def process_image_to_svg(
         physical_height_mm = round(original_height * scale, 2)
         print(f"Processing image: {original_width}x{original_height}, no DPI info, fit to A4 ({physical_width_mm}x{physical_height_mm}mm)")
 
-    # Convert to RGB if not already
-    if pil_image.mode != 'RGB':
-        pil_image = pil_image.convert('RGB')
+    # Flatten transparency onto white, then convert to grayscale
+    if pil_image.mode in ('RGBA', 'LA', 'P'):
+        pil_image = pil_image.convert('RGBA')
+        background = Image.new('RGBA', pil_image.size, (255, 255, 255, 255))
+        pil_image = Image.alpha_composite(background, pil_image)
+    gray = pil_image.convert('L')
 
     # Resize if needed for faster processing
-    pil_image = resize_image_if_needed(pil_image)
-    processing_width, processing_height = pil_image.size
+    gray = resize_image_if_needed(gray)
+    processing_width, processing_height = gray.size
 
-    # Split into CMYK channels (with thresholding)
-    splitter = CMYKSplitter()
-    channels = splitter.split_channels(
-        pil_image,
-        threshold_c=threshold_c,
-        threshold_m=threshold_m,
-        threshold_y=threshold_y,
-        threshold_k=threshold_k
+    trace_params = dict(
+        threshold=threshold,
+        invert=invert,
+        upscale=upscale,
+        blur=blur,
+        despeckle=despeckle,
+        prune=prune,
+        max_turn=max_turn,
+        smoothing=smoothing,
+        simplify=simplify,
+        min_length=min_length,
     )
 
-    # Debug: Save raw CMYK channels and bilevel images
     if DEBUG:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # Convert RGB to CMYK with GCR for debug output
-        c, m, y, k = splitter.rgb_to_cmyk_with_gcr(pil_image)
-
+        os.makedirs(DEBUG_DIR, exist_ok=True)
         print(f"Saving debug files to {DEBUG_DIR}/")
+        print(f"  Trace params: {trace_params}")
 
-        # Save raw CMYK channels (grayscale, 0=full ink, 255=no ink)
-        c.save(os.path.join(DEBUG_DIR, f"{timestamp}_raw_cyan.png"))
-        m.save(os.path.join(DEBUG_DIR, f"{timestamp}_raw_magenta.png"))
-        y.save(os.path.join(DEBUG_DIR, f"{timestamp}_raw_yellow.png"))
-        k.save(os.path.join(DEBUG_DIR, f"{timestamp}_raw_black.png"))
-        print(f"  Saved raw CMYK channel images")
+        ink = binarize(gray, threshold, invert, upscale, blur, despeckle)
+        bilevel = Image.fromarray((~ink * 255).astype('uint8'))
+        bilevel.save(os.path.join(DEBUG_DIR, f"{timestamp}_bilevel.png"))
+        print(f"  Saved bilevel image ({bilevel.size[0]}x{bilevel.size[1]})")
 
-        # Save bilevel channel images
-        for channel_name, channel_img in channels.items():
-            debug_path = os.path.join(DEBUG_DIR, f"{timestamp}_bilevel_{channel_name}.png")
-            channel_img.save(debug_path)
-            print(f"  Saved bilevel {channel_name} image: {debug_path}")
+    strokes = trace_centerlines(gray, **trace_params)
+    point_count = sum(len(stroke) for stroke in strokes)
 
-    # Process each channel with StringyPlotter
-    channel_configs = {
-        "cyan": divisor_c,
-        "magenta": divisor_m,
-        "yellow": divisor_y,
-        "black": divisor_k,
-    }
-
-    svg_results = {}
-    for channel_name, divisor in channel_configs.items():
-        if DEBUG:
-            print(f"Processing {channel_name} channel (divisor={divisor})...")
-
-        # Using StringyPlotter for continuous line drawings
-        plotter = StringyPlotter(
-            divisor=divisor,
-            skip_paths_longer_than=skip_paths_longer_than
-        )
-        svg_string = plotter.process_image(channels[channel_name])
-        svg_results[f"{channel_name}_svg"] = svg_string
-
-        # Debug: Save SVG files
-        if DEBUG:
-            svg_debug_path = os.path.join(DEBUG_DIR, f"{timestamp}_{channel_name}.svg")
-            with open(svg_debug_path, 'w') as f:
-                f.write(svg_string)
-            print(f"  Saved {channel_name} SVG: {svg_debug_path}")
-            print(f"  SVG length: {len(svg_string)} chars")
-
-    # Combine all channel SVGs into a single layered SVG
     # Use processing dimensions for viewBox coordinates, physical dimensions for size
-    combined_svg = SVGCombiner.combine_cmyk_layers(
-        cyan_svg=svg_results["cyan_svg"],
-        magenta_svg=svg_results["magenta_svg"],
-        yellow_svg=svg_results["yellow_svg"],
-        black_svg=svg_results["black_svg"],
+    svg = strokes_to_svg(
+        strokes,
         width=processing_width,
         height=processing_height,
         physical_width_mm=physical_width_mm,
-        physical_height_mm=physical_height_mm
+        physical_height_mm=physical_height_mm,
     )
 
     if DEBUG:
+        svg_debug_path = os.path.join(DEBUG_DIR, f"{timestamp}_centerline.svg")
+        with open(svg_debug_path, 'w') as f:
+            f.write(svg)
+        print(f"  Saved SVG: {svg_debug_path} ({len(svg)} chars)")
         print(f"Processing complete! Files saved in {DEBUG_DIR}/")
 
+    print(f"  Traced {len(strokes)} strokes, {point_count} points")
+
     return {
-        "combined_svg": combined_svg,
+        "svg": svg,
         "metadata": {
             "original_dimensions": [original_width, original_height],
             "processing_dimensions": [processing_width, processing_height],
             "physical_dimensions_mm": [physical_width_mm, physical_height_mm],
-            "dpi": [dpi_x, dpi_y]
+            "dpi": [dpi_x, dpi_y],
+            "stroke_count": len(strokes),
+            "point_count": point_count,
         },
     }

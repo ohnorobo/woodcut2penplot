@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.api import routes
 from backend.config import DEBUG
 
-app = FastAPI(title="CMYK Splitter API")
+app = FastAPI(title="woodcut2penplot API")
 
 # Log debug mode status on startup
 @app.on_event("startup")

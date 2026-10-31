@@ -1,44 +1,27 @@
 /**
- * Export all CMYK layers combined into one SVG
- * @param {Object} result - Result object from API with combined_svg
+ * Export the traced SVG with the current stroke width and physical size
+ * @param {Object} result - Result object from API with svg and metadata
  * @param {string} filename - Output filename
  */
-function exportCombinedCMYK(result, filename) {
-  if (!window.cmykData || !window.cmykData.result) {
-    console.error('No CMYK data to export');
+function exportSVG(result, filename) {
+  if (!result || !result.svg) {
+    console.error('No trace data to export');
     return;
   }
 
-  // Start from the original combined_svg string to preserve Inkscape
+  // Start from the original svg string to preserve Inkscape
   // namespace attributes (inkscape:groupmode, inkscape:label) that get
   // stripped when the browser DOM round-trips the SVG.
-  let source = window.cmykData.result.combined_svg;
+  let source = result.svg;
 
-  // Apply current stroke widths from the UI by replacing stroke-width
-  // values in the raw SVG string for each layer
-  const widthMap = {
-    'cyan-layer': window.cmykParams.width_c,
-    'magenta-layer': window.cmykParams.width_m,
-    'yellow-layer': window.cmykParams.width_y,
-    'black-layer': window.cmykParams.width_k
-  };
-
-  for (const [layerId, width] of Object.entries(widthMap)) {
-    // Find the layer's section and update stroke-width in its paths
-    const layerRegex = new RegExp(
-      `(id="${layerId}"[^>]*>)([\\s\\S]*?)(<\\/g>)`,
-    );
-    source = source.replace(layerRegex, (match, open, content, close) => {
-      const updatedContent = content.replace(
-        /stroke-width="[^"]*"/g,
-        `stroke-width="${width}"`
-      );
-      return open + updatedContent + close;
-    });
-  }
+  // Apply current stroke width from the UI
+  source = source.replace(
+    /stroke-width="[^"]*"/g,
+    `stroke-width="${window.params.stroke_width}"`
+  );
 
   // Update dimensions to physical units
-  const metadata = window.cmykData.result.metadata;
+  const metadata = result.metadata;
   const processingDims = metadata.processing_dimensions || metadata.original_dimensions;
   let widthAttr, heightAttr;
   if (metadata.physical_dimensions_mm) {

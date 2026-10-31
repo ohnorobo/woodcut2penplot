@@ -1,4 +1,4 @@
-"""Configuration settings for the CMYK Splitter backend."""
+"""Configuration settings for the woodcut2penplot backend."""
 
 import os
 
