@@ -68,24 +68,18 @@ window.params = {
 function setupGUI() {
   const gui = new dat.GUI();
 
+  // All controls at top level
   gui.add(params, 'uploadImage').name('📁 Select Image');
-
-  const ink = gui.addFolder('Ink detection');
-  ink.add(params, 'threshold', 0, 255, 1).name('Threshold');
-  ink.add(params, 'invert').name('Invert');
-  ink.add(params, 'blur', 0, 5, 0.1).name('Blur');
-  ink.add(params, 'despeckle', 0, 50, 1).name('Despeckle');
-  ink.add(params, 'upscale', 1, 6, 1).name('Upscale');
-  ink.open();
-
-  const lines = gui.addFolder('Lines');
-  lines.add(params, 'prune', 0, 30, 0.5).name('Prune Spurs');
-  lines.add(params, 'max_turn', 0, 180, 5).name('Max Turn °');
-  lines.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing');
-  lines.add(params, 'simplify', 0, 2, 0.05).name('Simplify');
-  lines.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
-  lines.open();
-
+  gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
+  gui.add(params, 'invert').name('Invert');
+  gui.add(params, 'blur', 0, 5, 0.1).name('Blur');
+  gui.add(params, 'despeckle', 0, 50, 1).name('Despeckle');
+  gui.add(params, 'upscale', 1, 6, 1).name('Upscale');
+  gui.add(params, 'prune', 0, 30, 0.5).name('Prune Spurs');
+  gui.add(params, 'max_turn', 0, 180, 5).name('Max Turn °');
+  gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing');
+  gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify');
+  gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
   gui.add(params, 'reprocess').name('🔄 Reprocess');
   gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width')
     .onChange(() => {

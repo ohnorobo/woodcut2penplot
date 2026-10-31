@@ -48,7 +48,8 @@ header h1 {
     font-size: 1.5rem;
 }
 
-.dg {
+/* Only the main dat.GUI panel; folders inside it also carry the .dg class */
+.dg.main {
     position: absolute;
     top: 47.5px;
     right: 5px;
