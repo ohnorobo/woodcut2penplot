@@ -9,7 +9,7 @@ Started from [cmyk-splitter](https://github.com/ohnorobo/cmyk-splitter), which h
 - **Centerline tracing** - Skeletonizes the ink, so each drawn line is plotted once rather than outlined twice
 - **Tunable ink detection** - Threshold, invert, blur, despeckle and internal upscale
 - **Stroke cleanup** - Prune spurs, join strokes through junctions, smooth and simplify
-- **Inkscape layer output** - Single SVG with a layer group, sized in mm from the image DPI (or fit to A4)
+- **Inkscape layer output** - SVG with two layers, sized in mm from the image DPI (or fit to A4): the black layer to plot, and a fixed red hairline "guide" layer on top so the line pattern stays visible at any stroke width
 - **Real-time preview** - Adjust stroke width without reprocessing
 - **Easy export** - Download the SVG ready to plot
 
@@ -106,7 +106,8 @@ python -m backend.scripts.generate_default_cache
 | Smoothing | 1.0 | Smoothing along each stroke |
 | Simplify | 0.15 | Point reduction tolerance (px) |
 | Min Length | 1.5 | Drop strokes shorter than this (px) |
-| Stroke Width | 1.0 | Display/export line width, no reprocess needed |
+| Stroke Width | 3.0 | Display/export line width of the black layer, no reprocess needed |
+| Show Guide | on | Show the red hairline guide layer in the preview |
 
 ## License
 

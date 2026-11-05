@@ -49,18 +49,19 @@ function renderTrace() {
   container.innerHTML = '';
   container.appendChild(svgElement);
 
-  // Apply stroke width from current parameters
+  // Apply stroke width and guide visibility from current parameters
   updateStrokeWidths();
+  updateGuideVisibility();
 }
 
 /**
- * Update stroke width for all paths
+ * Update stroke width for the plotted layer (the guide layer keeps its width)
  */
 function updateStrokeWidths() {
   const svg = document.querySelector('#trace-container svg');
   if (!svg) return;
 
-  svg.querySelectorAll('path').forEach(path => {
+  svg.querySelectorAll('#centerline-layer path').forEach(path => {
     path.setAttribute('stroke-width', window.params.stroke_width);
   });
 }
@@ -72,5 +73,16 @@ if (document.readyState === 'loading') {
   setup();
 }
 
+/**
+ * Show or hide the red guide layer in the preview
+ */
+function updateGuideVisibility() {
+  const guide = document.querySelector('#trace-container svg #guide-layer');
+  if (!guide) return;
+
+  guide.setAttribute('display', window.params.show_guide ? 'inline' : 'none');
+}
+
 // Export for use by control handlers
 window.updateStrokeWidths = updateStrokeWidths;
+window.updateGuideVisibility = updateGuideVisibility;

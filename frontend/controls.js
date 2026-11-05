@@ -26,8 +26,9 @@ const TRACE_DEFAULTS = {
 window.params = {
   ...TRACE_DEFAULTS,
 
-  // Stroke width, applied client side
-  stroke_width: 1.0,
+  // Stroke width and guide layer visibility, applied client side
+  stroke_width: 3.0,
+  show_guide: true,
 
   // Actions
   uploadImage: function() {
@@ -81,6 +82,12 @@ function setupGUI() {
   gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify');
   gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
   gui.add(params, 'reprocess').name('🔄 Reprocess');
+  gui.add(params, 'show_guide').name('Show Guide')
+    .onChange(() => {
+      if (typeof updateGuideVisibility === 'function') {
+        updateGuideVisibility();
+      }
+    });
   gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width')
     .onChange(() => {
       if (typeof updateStrokeWidths === 'function') {

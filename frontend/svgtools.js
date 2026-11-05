@@ -14,11 +14,16 @@ function exportSVG(result, filename) {
   // stripped when the browser DOM round-trips the SVG.
   let source = result.svg;
 
-  // Apply current stroke width from the UI
-  source = source.replace(
-    /stroke-width="[^"]*"/g,
-    `stroke-width="${window.params.stroke_width}"`
-  );
+  // Apply current stroke width from the UI to the plotted layer only;
+  // the guide layer keeps its fixed hairline width
+  const layerRegex = /(id="centerline-layer"[^>]*>)([\s\S]*?)(<\/g>)/;
+  source = source.replace(layerRegex, (match, open, content, close) => {
+    const updatedContent = content.replace(
+      /stroke-width="[^"]*"/g,
+      `stroke-width="${window.params.stroke_width}"`
+    );
+    return open + updatedContent + close;
+  });
 
   // Update dimensions to physical units
   const metadata = result.metadata;

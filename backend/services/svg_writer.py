@@ -16,6 +16,14 @@ LAYER_ID = 'centerline-layer'
 LAYER_LABEL = '1 K'
 STROKE_COLOR = 'rgb(0, 0, 0)'
 
+# A hairline copy of every stroke drawn on top, so the line pattern stays
+# visible however thick the plotted layer is. Fixed width: the frontend
+# never touches it, and non-scaling-stroke keeps it one thin screen line.
+GUIDE_LAYER_ID = 'guide-layer'
+GUIDE_LAYER_LABEL = '2 guide'
+GUIDE_COLOR = 'rgb(255, 0, 0)'
+GUIDE_STROKE_WIDTH = 0.35
+
 
 def stroke_to_path_d(points: np.ndarray) -> str:
     """Polyline as an SVG path, closed with Z when the ends coincide."""
@@ -33,10 +41,11 @@ def strokes_to_svg(
     height: int,
     physical_width_mm: float = None,
     physical_height_mm: float = None,
-    stroke_width: float = 1.0,
+    stroke_width: float = 3.0,
 ) -> str:
     """
-    Build an SVG with one Inkscape layer holding every stroke.
+    Build an SVG with two Inkscape layers holding every stroke: the black
+    layer to plot, and a red hairline guide layer drawn over it.
 
     Args:
         strokes: List of (n, 2) arrays of (x, y) in pixel coordinates
@@ -61,18 +70,31 @@ def strokes_to_svg(
 
     svg_root.set('viewBox', f'0 0 {width} {height}')
 
-    group = ET.SubElement(svg_root, 'g')
-    group.set('id', LAYER_ID)
-    group.set(f'{{{INKSCAPE_NS}}}groupmode', 'layer')
-    group.set(f'{{{INKSCAPE_NS}}}label', LAYER_LABEL)
-    group.set('fill', 'none')
-    group.set('stroke', STROKE_COLOR)
-    group.set('stroke-linecap', 'round')
-    group.set('stroke-linejoin', 'round')
+    path_ds = [stroke_to_path_d(stroke) for stroke in strokes]
 
-    for stroke in strokes:
-        path = ET.SubElement(group, 'path')
-        path.set('d', stroke_to_path_d(stroke))
+    layer = _add_layer(svg_root, LAYER_ID, LAYER_LABEL, STROKE_COLOR)
+    for d in path_ds:
+        path = ET.SubElement(layer, 'path')
+        path.set('d', d)
         path.set('stroke-width', str(stroke_width))
 
+    guide = _add_layer(svg_root, GUIDE_LAYER_ID, GUIDE_LAYER_LABEL, GUIDE_COLOR)
+    guide.set('stroke-width', str(GUIDE_STROKE_WIDTH))
+    guide.set('vector-effect', 'non-scaling-stroke')
+    for d in path_ds:
+        ET.SubElement(guide, 'path').set('d', d)
+
     return ET.tostring(svg_root, encoding='unicode', method='xml')
+
+
+def _add_layer(svg_root: ET.Element, layer_id: str, label: str, color: str) -> ET.Element:
+    """Append an Inkscape layer group with the shared stroke styling."""
+    group = ET.SubElement(svg_root, 'g')
+    group.set('id', layer_id)
+    group.set(f'{{{INKSCAPE_NS}}}groupmode', 'layer')
+    group.set(f'{{{INKSCAPE_NS}}}label', label)
+    group.set('fill', 'none')
+    group.set('stroke', color)
+    group.set('stroke-linecap', 'round')
+    group.set('stroke-linejoin', 'round')
+    return group
