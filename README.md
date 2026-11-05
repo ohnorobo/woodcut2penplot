@@ -1,12 +1,13 @@
 # woodcut2penplot
 
-A web application that turns line art — woodcuts, engravings, ink drawings — into single-stroke SVG suitable for pen plotting. Upload an image and get an SVG where every line in the drawing becomes one pen stroke down its centre, instead of an outline around it.
+A web application that turns line art — woodcuts, engravings, ink drawings — into pen-plotter SVG. Upload an image and get an SVG where every line in the drawing becomes a pen stroke down its centre, instead of an outline around it; lines wider than the pen become several parallel passes that converge as the line thins, and solid dark areas become nested fans of passes.
 
 Started from [cmyk-splitter](https://github.com/ohnorobo/cmyk-splitter), which handles the web part the same way.
 
 ## Features
 
 - **Centerline tracing** - Skeletonizes the ink, so each drawn line is plotted once rather than outlined twice
+- **Width-aware passes** - Each stroke carries its local ink width; wider than the pen means parallel, slightly overlapping passes (see `multipass.py`)
 - **Tunable ink detection** - Threshold, invert, blur, despeckle and internal upscale
 - **Stroke cleanup** - Prune spurs, join strokes through junctions, smooth and simplify
 - **Inkscape layer output** - SVG with two layers, sized in mm from the image DPI (or fit to A4): the black layer to plot, and a fixed red hairline "guide" layer on top so the line pattern stays visible at any stroke width
@@ -22,7 +23,9 @@ Started from [cmyk-splitter](https://github.com/ohnorobo/cmyk-splitter), which h
 3. `build_graph` turns the skeleton into nodes (ends, junctions) and edges (pixel chains)
 4. `prune_spurs` removes short dead-end whiskers
 5. `join_strokes` pairs up edges through each junction by how straight the pen would travel
-6. `smooth_stroke` and `simplify_stroke` tidy each polyline
+6. `smooth_stroke` tidies each polyline
+7. `multipass.split_stroke` spreads strokes wider than the pen into parallel passes, using the distance transform sampled along the stroke as the local width
+8. `simplify_stroke` reduces points
 
 This is the same job `autotrace -centerline` does for the
 [inkscape-centerline-trace](https://github.com/fablabnbg/inkscape-centerline-trace) extension,
@@ -106,7 +109,9 @@ python -m backend.scripts.generate_default_cache
 | Smoothing | 1.0 | Smoothing along each stroke |
 | Simplify | 0.15 | Point reduction tolerance (px) |
 | Min Length | 1.5 | Drop strokes shorter than this (px) |
-| Stroke Width | 3.0 | Display/export line width of the black layer, no reprocess needed |
+| Stroke Width Input | 3.0 | Pen width the algorithm plans for (px); wider lines get parallel passes, 0 = plain centerlines |
+| Pass Overlap | 0.15 | Fraction of the pen width that neighbouring passes overlap |
+| Stroke Width Display | 3.0 | Line width the SVG is drawn/exported with, no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
 
 ## License

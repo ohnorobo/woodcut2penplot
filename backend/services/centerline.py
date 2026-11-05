@@ -7,7 +7,10 @@ job `autotrace --centerline` does for the inkscape-centerline-trace extension,
 as a pipeline of small steps that are easy to change:
 
     grayscale -> upscale -> blur -> threshold -> despeckle -> skeletonize
-              -> build graph -> prune spurs -> join strokes -> smooth -> simplify
+              -> build graph -> prune spurs -> join strokes -> smooth
+              -> split into pen passes -> simplify
+
+The last step is what makes this more than a centerline tracer: see multipass.py.
 """
 
 from collections import defaultdict
@@ -18,6 +21,8 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 from skimage.morphology import remove_small_holes, remove_small_objects, skeletonize
+
+from backend.services.multipass import split_stroke, width_profile
 
 # 8-connected neighbourhood, as (row, col) offsets
 NEIGHBOURS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
@@ -328,9 +333,11 @@ def trace_centerlines(
     smoothing: float = 1.0,
     simplify: float = 0.15,
     min_length: float = 1.5,
+    pen_width: float = 3.0,
+    overlap: float = 0.15,
 ) -> List[np.ndarray]:
     """
-    Trace the centerlines of an image.
+    Trace the centerlines of an image and spread wide lines into pen passes.
 
     All lengths are in source image pixels, whatever the upscale factor.
 
@@ -346,6 +353,9 @@ def trace_centerlines(
         smoothing: Gaussian sigma applied along each stroke
         simplify: Douglas-Peucker tolerance
         min_length: Drop finished strokes shorter than this
+        pen_width: Width of the pen line; lines wider than this get several
+            parallel passes. 0 disables splitting (plain centerlines)
+        overlap: Fraction of the pen width that neighbouring passes overlap
 
     Returns:
         List of (n, 2) float arrays of (x, y) in source image pixels
@@ -354,10 +364,21 @@ def trace_centerlines(
     graph = build_graph(skeletonize(ink))
     prune_spurs(graph, prune * upscale)
 
+    smoothed = [smooth_stroke(s, smoothing * upscale) for s in join_strokes(graph, max_turn)]
+
+    if pen_width > 0:
+        edt = ndimage.distance_transform_edt(ink)
+        paths = []
+        for stroke in smoothed:
+            width = width_profile(stroke, edt, upscale)
+            paths += split_stroke(stroke, width, pen_width * upscale, overlap)
+    else:
+        paths = smoothed
+
     strokes = []
-    for stroke in join_strokes(graph, max_turn):
-        stroke = smooth_stroke(stroke, smoothing * upscale) / upscale
-        if stroke_length(stroke) >= min_length:
-            strokes.append(simplify_stroke(stroke, simplify))
+    for path in paths:
+        path = path / upscale
+        if stroke_length(path) >= min_length:
+            strokes.append(simplify_stroke(path, simplify))
 
     return strokes

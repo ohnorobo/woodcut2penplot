@@ -21,12 +21,16 @@ const TRACE_DEFAULTS = {
   smoothing: 1.0,
   simplify: 0.15,
   min_length: 1.5,
+  pen_width: 3.0,
+  overlap: 0.15,
 };
 
 window.params = {
   ...TRACE_DEFAULTS,
 
-  // Stroke width and guide layer visibility, applied client side
+  // Display stroke width and guide layer visibility, applied client side.
+  // pen_width above is the width the algorithm plans passes for; this one
+  // only changes how the SVG is drawn.
   stroke_width: 3.0,
   show_guide: true,
 
@@ -67,7 +71,8 @@ window.params = {
  * Set up dat.GUI controls
  */
 function setupGUI() {
-  const gui = new dat.GUI();
+  // Wide enough that "Stroke Width Display" is not clipped in the label column
+  const gui = new dat.GUI({ width: 340 });
 
   // All controls at top level
   gui.add(params, 'uploadImage').name('📁 Select Image');
@@ -81,6 +86,8 @@ function setupGUI() {
   gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing');
   gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify');
   gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
+  gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input');
+  gui.add(params, 'overlap', 0, 0.9, 0.05).name('Pass Overlap');
   gui.add(params, 'reprocess').name('🔄 Reprocess');
   gui.add(params, 'show_guide').name('Show Guide')
     .onChange(() => {
@@ -88,7 +95,7 @@ function setupGUI() {
         updateGuideVisibility();
       }
     });
-  gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width')
+  gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width Display')
     .onChange(() => {
       if (typeof updateStrokeWidths === 'function') {
         updateStrokeWidths();

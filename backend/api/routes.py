@@ -23,6 +23,8 @@ async def process_image(
     smoothing: float = Form(1.0),
     simplify: float = Form(0.15),
     min_length: float = Form(1.5),
+    pen_width: float = Form(3.0),
+    overlap: float = Form(0.15),
 ):
     """
     Trace the centerlines of an uploaded image into an SVG.
@@ -39,6 +41,8 @@ async def process_image(
         smoothing: Smoothing sigma along each stroke in pixels (default: 1.0)
         simplify: Point reduction tolerance in pixels (default: 0.15)
         min_length: Drop strokes shorter than this many pixels (default: 1.5)
+        pen_width: Pen line width in pixels; wider lines get parallel passes, 0 disables (default: 3)
+        overlap: Fraction of the pen width neighbouring passes overlap, 0-0.9 (default: 0.15)
 
     Returns:
         JSON response with the SVG string and metadata
@@ -51,6 +55,8 @@ async def process_image(
 
         if not 1 <= upscale <= 6:
             raise HTTPException(status_code=400, detail="upscale must be between 1 and 6")
+        if not 0 <= overlap <= 0.9:
+            raise HTTPException(status_code=400, detail="overlap must be between 0 and 0.9")
 
         # Read uploaded image
         image_data = await image.read()
@@ -69,6 +75,8 @@ async def process_image(
             smoothing=smoothing,
             simplify=simplify,
             min_length=min_length,
+            pen_width=pen_width,
+            overlap=overlap,
         )
 
         # Log completion

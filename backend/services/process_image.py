@@ -58,6 +58,8 @@ def process_image_to_svg(
     smoothing: float = 1.0,
     simplify: float = 0.15,
     min_length: float = 1.5,
+    pen_width: float = 3.0,
+    overlap: float = 0.15,
 ) -> Dict:
     """
     Process a PIL Image into a centerline-traced SVG.
@@ -74,6 +76,8 @@ def process_image_to_svg(
         smoothing: Gaussian sigma applied along each stroke
         simplify: Douglas-Peucker tolerance in pixels
         min_length: Drop strokes shorter than this many pixels
+        pen_width: Pen line width in pixels; wider lines get parallel passes, 0 disables
+        overlap: Fraction of the pen width that neighbouring passes overlap
 
     Returns:
         Dict with svg and metadata
@@ -121,6 +125,8 @@ def process_image_to_svg(
         smoothing=smoothing,
         simplify=simplify,
         min_length=min_length,
+        pen_width=pen_width,
+        overlap=overlap,
     )
 
     if DEBUG:
@@ -164,5 +170,6 @@ def process_image_to_svg(
             "dpi": [dpi_x, dpi_y],
             "stroke_count": len(strokes),
             "point_count": point_count,
+            "pen_width": pen_width,
         },
     }
