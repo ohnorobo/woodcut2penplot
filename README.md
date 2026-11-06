@@ -111,6 +111,8 @@ python -m backend.scripts.generate_default_cache
 | Min Length | 1.5 | Drop strokes shorter than this (px) |
 | Stroke Width Input | 3.0 | Pen width the algorithm plans for (px); wider lines get parallel passes, 0 = plain centerlines |
 | Pass Overlap | 0.15 | Fraction of the pen width that neighbouring passes overlap |
+| Width Median | 3 | Median window (px) along each stroke for the measured ink width; removes junction spikes |
+| Width Smoothing | 2.0 | Smoothing sigma (px) along each stroke for the measured ink width; higher converges passes more gently |
 | Stroke Width Display | 3.0 | Line width the SVG is drawn/exported with, no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
 

@@ -23,6 +23,8 @@ const TRACE_DEFAULTS = {
   min_length: 1.5,
   pen_width: 3.0,
   overlap: 0.15,
+  width_median: 3.0,
+  width_smooth: 2.0,
 };
 
 window.params = {
@@ -88,6 +90,8 @@ function setupGUI() {
   gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
   gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input');
   gui.add(params, 'overlap', 0, 0.9, 0.05).name('Pass Overlap');
+  gui.add(params, 'width_median', 0, 15, 0.5).name('Width Median');
+  gui.add(params, 'width_smooth', 0, 10, 0.1).name('Width Smoothing');
   gui.add(params, 'reprocess').name('🔄 Reprocess');
   gui.add(params, 'show_guide').name('Show Guide')
     .onChange(() => {

@@ -335,6 +335,8 @@ def trace_centerlines(
     min_length: float = 1.5,
     pen_width: float = 3.0,
     overlap: float = 0.15,
+    width_median: float = 3.0,
+    width_smooth: float = 2.0,
 ) -> List[np.ndarray]:
     """
     Trace the centerlines of an image and spread wide lines into pen passes.
@@ -356,6 +358,10 @@ def trace_centerlines(
         pen_width: Width of the pen line; lines wider than this get several
             parallel passes. 0 disables splitting (plain centerlines)
         overlap: Fraction of the pen width that neighbouring passes overlap
+        width_median: Median window along the stroke for the measured ink
+            width; removes junction spikes
+        width_smooth: Gaussian sigma along the stroke for the measured ink
+            width; higher makes passes converge more gently
 
     Returns:
         List of (n, 2) float arrays of (x, y) in source image pixels
@@ -370,7 +376,7 @@ def trace_centerlines(
         edt = ndimage.distance_transform_edt(ink)
         paths = []
         for stroke in smoothed:
-            width = width_profile(stroke, edt, upscale)
+            width = width_profile(stroke, edt, upscale, width_median, width_smooth)
             paths += split_stroke(stroke, width, pen_width * upscale, overlap)
     else:
         paths = smoothed

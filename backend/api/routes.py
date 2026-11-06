@@ -25,6 +25,8 @@ async def process_image(
     min_length: float = Form(1.5),
     pen_width: float = Form(3.0),
     overlap: float = Form(0.15),
+    width_median: float = Form(3.0),
+    width_smooth: float = Form(2.0),
 ):
     """
     Trace the centerlines of an uploaded image into an SVG.
@@ -43,6 +45,8 @@ async def process_image(
         min_length: Drop strokes shorter than this many pixels (default: 1.5)
         pen_width: Pen line width in pixels; wider lines get parallel passes, 0 disables (default: 3)
         overlap: Fraction of the pen width neighbouring passes overlap, 0-0.9 (default: 0.15)
+        width_median: Median window in pixels for the measured ink width (default: 3)
+        width_smooth: Smoothing sigma in pixels for the measured ink width (default: 2)
 
     Returns:
         JSON response with the SVG string and metadata
@@ -77,6 +81,8 @@ async def process_image(
             min_length=min_length,
             pen_width=pen_width,
             overlap=overlap,
+            width_median=width_median,
+            width_smooth=width_smooth,
         )
 
         # Log completion

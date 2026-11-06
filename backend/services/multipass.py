@@ -15,20 +15,38 @@ from typing import List
 import numpy as np
 from scipy import ndimage
 
-# Along-stroke filtering of the width profile, in upscaled pixels / samples.
+# Along-stroke filtering of the width profile, in source image pixels.
 # The median kills the 1-2 px spikes the distance transform shows at every
 # junction; the gaussian makes passes converge gently rather than jitter.
-WIDTH_MEDIAN_SAMPLES = 9
-WIDTH_SMOOTH_SIGMA = 2.0  # multiplied by the upscale factor
+WIDTH_MEDIAN = 3.0
+WIDTH_SMOOTH = 2.0
 
 
-def width_profile(points: np.ndarray, edt: np.ndarray, upscale: int) -> np.ndarray:
-    """Local ink width at each stroke point, smoothed along the stroke."""
+def width_profile(
+    points: np.ndarray,
+    edt: np.ndarray,
+    upscale: int,
+    median: float = WIDTH_MEDIAN,
+    smooth: float = WIDTH_SMOOTH,
+) -> np.ndarray:
+    """
+    Local ink width at each stroke point, smoothed along the stroke.
+
+    Args:
+        points: (n, 2) stroke polyline in upscaled pixels
+        edt: Distance transform of the ink, upscaled pixels
+        upscale: Internal resolution multiplier
+        median: Median filter window along the stroke, source pixels; 0 disables
+        smooth: Gaussian sigma along the stroke, source pixels; 0 disables
+    """
     radius = ndimage.map_coordinates(edt, [points[:, 1], points[:, 0]], order=1, mode='nearest')
     width = 2 * radius
-    if len(width) >= WIDTH_MEDIAN_SAMPLES:
-        width = ndimage.median_filter(width, size=WIDTH_MEDIAN_SAMPLES, mode='nearest')
-    return ndimage.gaussian_filter1d(width, WIDTH_SMOOTH_SIGMA * upscale, mode='nearest')
+    samples = int(round(median * upscale)) | 1  # odd window
+    if median > 0 and samples >= 3 and len(width) >= samples:
+        width = ndimage.median_filter(width, size=samples, mode='nearest')
+    if smooth > 0:
+        width = ndimage.gaussian_filter1d(width, smooth * upscale, mode='nearest')
+    return width
 
 
 def _normals(points: np.ndarray) -> np.ndarray:
