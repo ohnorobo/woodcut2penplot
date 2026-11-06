@@ -10,7 +10,8 @@ Started from [cmyk-splitter](https://github.com/ohnorobo/cmyk-splitter), which h
 - **Width-aware passes** - Each stroke carries its local ink width; wider than the pen means parallel, slightly overlapping passes (see `multipass.py`)
 - **Tunable ink detection** - Threshold, invert, blur, despeckle and internal upscale
 - **Stroke cleanup** - Prune spurs, join strokes through junctions, smooth and simplify
-- **Inkscape layer output** - SVG with two layers, sized in mm from the image DPI (or fit to A4): the black layer to plot, and a fixed red hairline "guide" layer on top so the line pattern stays visible at any stroke width
+- **Real-world sizing** - Set the output height in cm; the pen width is given in mm and converted to pixels at that scale, so the same pen fits more or fewer passes depending on how large the plot is
+- **Inkscape layer output** - SVG with two layers: the black layer to plot, and a fixed red hairline "guide" layer on top so the line pattern stays visible at any stroke width
 - **Real-time preview** - Adjust stroke width without reprocessing
 - **Easy export** - Download the SVG ready to plot
 
@@ -97,12 +98,14 @@ python -m backend.scripts.generate_default_cache
 
 ## Parameters
 
-All lengths are in source image pixels, whatever the upscale factor. (For an
-image with no DPI the SVG is fit to A4, so on the default 640 px wide image one
-pixel is about 0.33 mm.)
+Output Height fixes the physical size, and so the mm-per-pixel scale. The
+parameters in mm are converted to pixels at that scale before tracing; the
+other lengths are in source image pixels, whatever the upscale factor. (On the
+default 603 px tall image at 20 cm, one pixel is about 0.33 mm.)
 
 | Parameter | Default | Effect |
 |-----------|---------|--------|
+| Output Height (cm) | 20 | Height of the plotted output; width follows the image aspect |
 | Threshold | 128 | Gray level below which a pixel is ink |
 | Invert | off | Trace light lines on a dark background |
 | Blur (px) | 0 | Blur radius before thresholding; hides paper grain |
@@ -113,11 +116,11 @@ pixel is about 0.33 mm.)
 | Smoothing (px) | 1.0 | Gaussian sigma along each stroke |
 | Simplify (px) | 0.15 | Point reduction tolerance |
 | Min Length (px) | 1.5 | Drop strokes shorter than this |
-| Stroke Width Input (px) | 3.0 | Pen width the algorithm plans for; wider lines get parallel passes, 0 = plain centerlines |
+| Stroke Width Input (mm) | 1.0 | Pen width the algorithm plans for; wider lines get parallel passes, 0 = plain centerlines |
 | Pass Overlap | 0.15 | Fraction of the pen width that neighbouring passes overlap |
 | Width Median (px) | 3 | Median window along each stroke for the measured ink width; removes junction spikes |
 | Width Smoothing (px) | 2.0 | Gaussian sigma along each stroke for the measured ink width; higher converges passes more gently |
-| Stroke Width Display (px) | 3.0 | Line width the SVG is drawn/exported with, in SVG user units = processing pixels; no reprocess needed |
+| Stroke Width Display (mm) | 1.0 | Line width the SVG is drawn/exported with; no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
 
 ## License

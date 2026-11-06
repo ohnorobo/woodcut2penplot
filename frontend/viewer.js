@@ -61,8 +61,9 @@ function updateStrokeWidths() {
   const svg = document.querySelector('#trace-container svg');
   if (!svg) return;
 
+  const widthPx = strokeWidthPx(window.traceData.result.metadata);
   svg.querySelectorAll('#centerline-layer path').forEach(path => {
-    path.setAttribute('stroke-width', window.params.stroke_width);
+    path.setAttribute('stroke-width', widthPx);
   });
 }
 

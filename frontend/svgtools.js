@@ -1,4 +1,15 @@
 /**
+ * Display stroke width in SVG user units (processing pixels), converted
+ * from the mm value in the UI with the scale the backend reports
+ * @param {Object} metadata - Result metadata with mm_per_px
+ * @returns {number} stroke width in pixels
+ */
+function strokeWidthPx(metadata) {
+  const mmPerPx = (metadata && metadata.mm_per_px) || 1;
+  return window.params.stroke_width / mmPerPx;
+}
+
+/**
  * Export the traced SVG with the current stroke width and physical size
  * @param {Object} result - Result object from API with svg and metadata
  * @param {string} filename - Output filename
@@ -14,29 +25,24 @@ function exportSVG(result, filename) {
   // stripped when the browser DOM round-trips the SVG.
   let source = result.svg;
 
+  const metadata = result.metadata;
+  const processingDims = metadata.processing_dimensions || metadata.original_dimensions;
+
   // Apply current stroke width from the UI to the plotted layer only;
   // the guide layer keeps its fixed hairline width
+  const widthPx = strokeWidthPx(metadata);
   const layerRegex = /(id="centerline-layer"[^>]*>)([\s\S]*?)(<\/g>)/;
   source = source.replace(layerRegex, (match, open, content, close) => {
     const updatedContent = content.replace(
       /stroke-width="[^"]*"/g,
-      `stroke-width="${window.params.stroke_width}"`
+      `stroke-width="${widthPx}"`
     );
     return open + updatedContent + close;
   });
 
-  // Update dimensions to physical units
-  const metadata = result.metadata;
-  const processingDims = metadata.processing_dimensions || metadata.original_dimensions;
-  let widthAttr, heightAttr;
-  if (metadata.physical_dimensions_mm) {
-    widthAttr = metadata.physical_dimensions_mm[0] + 'mm';
-    heightAttr = metadata.physical_dimensions_mm[1] + 'mm';
-  } else {
-    const scale = Math.min(210 / processingDims[0], 297 / processingDims[1]);
-    widthAttr = Math.round(processingDims[0] * scale * 100) / 100 + 'mm';
-    heightAttr = Math.round(processingDims[1] * scale * 100) / 100 + 'mm';
-  }
+  // Physical size in mm, as the backend sized it from Output Height
+  const widthAttr = metadata.physical_dimensions_mm[0] + 'mm';
+  const heightAttr = metadata.physical_dimensions_mm[1] + 'mm';
   source = source.replace(/width="[^"]*"/, `width="${widthAttr}"`);
   source = source.replace(/height="[^"]*"/, `height="${heightAttr}"`);
 

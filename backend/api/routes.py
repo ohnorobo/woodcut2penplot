@@ -13,6 +13,7 @@ router = APIRouter()
 @router.post("/process-image")
 async def process_image(
     image: UploadFile = File(...),
+    output_height: float = Form(20.0),
     threshold: int = Form(128),
     invert: bool = Form(False),
     upscale: int = Form(3),
@@ -23,7 +24,7 @@ async def process_image(
     smoothing: float = Form(1.0),
     simplify: float = Form(0.15),
     min_length: float = Form(1.5),
-    pen_width: float = Form(3.0),
+    pen_width: float = Form(1.0),
     overlap: float = Form(0.15),
     width_median: float = Form(3.0),
     width_smooth: float = Form(2.0),
@@ -33,6 +34,7 @@ async def process_image(
 
     Args:
         image: Uploaded image file (JPEG, PNG, GIF)
+        output_height: Height of the plotted output in cm, width follows the aspect (default: 20)
         threshold: Gray level 0-255, darker pixels count as ink (default: 128)
         invert: Trace light lines on a dark background (default: false)
         upscale: Internal resolution multiplier 1-6 (default: 3)
@@ -43,12 +45,12 @@ async def process_image(
         smoothing: Smoothing sigma along each stroke in source pixels (default: 1.0)
         simplify: Point reduction tolerance in source pixels (default: 0.15)
         min_length: Drop strokes shorter than this many source pixels (default: 1.5)
-        pen_width: Pen line width in source pixels; wider lines get parallel passes, 0 disables (default: 3)
+        pen_width: Pen line width in mm; wider lines get parallel passes, 0 disables (default: 1.0)
         overlap: Fraction of the pen width neighbouring passes overlap, 0-0.9 (default: 0.15)
         width_median: Median window in source pixels for the measured ink width (default: 3)
         width_smooth: Smoothing sigma in source pixels for the measured ink width (default: 2)
 
-    All lengths are in source image pixels regardless of upscale.
+    Other lengths are in source image pixels regardless of upscale.
 
     Returns:
         JSON response with the SVG string and metadata
@@ -59,6 +61,8 @@ async def process_image(
         if not image.content_type or not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Invalid image format")
 
+        if output_height <= 0:
+            raise HTTPException(status_code=400, detail="output_height must be positive")
         if not 1 <= upscale <= 6:
             raise HTTPException(status_code=400, detail="upscale must be between 1 and 6")
         if not 0 <= overlap <= 0.9:
@@ -71,6 +75,7 @@ async def process_image(
         # Process image through service layer
         result = process_image_to_svg(
             pil_image=pil_image,
+            output_height=output_height,
             threshold=threshold,
             invert=invert,
             upscale=upscale,

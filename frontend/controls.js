@@ -10,9 +10,12 @@ const DEFAULT_IMAGE = 'chantarelle.jpg';
 
 // Parameters sent to the backend. The cached default response was generated
 // with exactly these values, so keep them in sync with process_image.py.
-// All lengths are in source image pixels, whatever the upscale factor;
-// despeckle is an area in source pixels squared.
+// output_height (cm) sets the physical size and so the mm-per-pixel scale;
+// pen_width is in mm and converted at that scale. The other lengths are in
+// source image pixels, whatever the upscale factor; despeckle is an area in
+// source pixels squared.
 const TRACE_DEFAULTS = {
+  output_height: 20,
   threshold: 128,
   invert: false,
   upscale: 3,
@@ -23,7 +26,7 @@ const TRACE_DEFAULTS = {
   smoothing: 1.0,
   simplify: 0.15,
   min_length: 1.5,
-  pen_width: 3.0,
+  pen_width: 1.0,
   overlap: 0.15,
   width_median: 3.0,
   width_smooth: 2.0,
@@ -32,11 +35,11 @@ const TRACE_DEFAULTS = {
 window.params = {
   ...TRACE_DEFAULTS,
 
-  // Display stroke width and guide layer visibility, applied client side.
-  // pen_width above is the width the algorithm plans passes for; this one
-  // only changes how the SVG is drawn. It is in SVG user units, which the
-  // viewBox makes equal to processing pixels, so it matches pen_width.
-  stroke_width: 3.0,
+  // Display stroke width (mm) and guide layer visibility, applied client
+  // side. pen_width above is the width the algorithm plans passes for; this
+  // one only changes how the SVG is drawn, converted to pixels with the
+  // mm_per_px the backend reports (see strokeWidthPx in svgtools.js).
+  stroke_width: 1.0,
   show_guide: true,
 
   // Actions
@@ -76,10 +79,11 @@ window.params = {
  * Set up dat.GUI controls
  */
 function setupGUI() {
-  // Wide enough that "Stroke Width Display (px)" is not clipped in the label column
+  // Wide enough that "Stroke Width Display (mm)" is not clipped in the label column
   const gui = new dat.GUI({ width: 380 });
 
   // All controls at top level
+  gui.add(params, 'output_height', 1, 100, 0.5).name('Output Height (cm)');
   gui.add(params, 'uploadImage').name('📁 Select Image');
   gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
   gui.add(params, 'invert').name('Invert');
@@ -91,7 +95,7 @@ function setupGUI() {
   gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing (px)');
   gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify (px)');
   gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length (px)');
-  gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input (px)');
+  gui.add(params, 'pen_width', 0, 5, 0.05).name('Stroke Width Input (mm)');
   gui.add(params, 'overlap', 0, 0.9, 0.05).name('Pass Overlap');
   gui.add(params, 'width_median', 0, 15, 0.5).name('Width Median (px)');
   gui.add(params, 'width_smooth', 0, 10, 0.1).name('Width Smoothing (px)');
@@ -102,7 +106,7 @@ function setupGUI() {
         updateGuideVisibility();
       }
     });
-  gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width Display (px)')
+  gui.add(params, 'stroke_width', 0.05, 5, 0.05).name('Stroke Width Display (mm)')
     .onChange(() => {
       if (typeof updateStrokeWidths === 'function') {
         updateStrokeWidths();

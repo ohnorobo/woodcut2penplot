@@ -48,6 +48,7 @@ def resize_image_if_needed(image: Image.Image, max_dimension: int = MAX_IMAGE_DI
 
 def process_image_to_svg(
     pil_image: Image.Image,
+    output_height: float = 20.0,
     threshold: int = 128,
     invert: bool = False,
     upscale: int = 3,
@@ -58,7 +59,7 @@ def process_image_to_svg(
     smoothing: float = 1.0,
     simplify: float = 0.15,
     min_length: float = 1.5,
-    pen_width: float = 3.0,
+    pen_width: float = 1.0,
     overlap: float = 0.15,
     width_median: float = 3.0,
     width_smooth: float = 2.0,
@@ -68,6 +69,9 @@ def process_image_to_svg(
 
     Args:
         pil_image: PIL Image in any mode
+        output_height: Height of the plotted output in cm; the width follows
+            the image aspect. This fixes the mm-per-pixel scale that the
+            real-world parameters (pen_width) are converted with
         threshold: Gray level 0-255, darker pixels count as ink
         invert: Trace light lines on a dark background instead
         upscale: Internal resolution multiplier
@@ -78,12 +82,12 @@ def process_image_to_svg(
         smoothing: Gaussian sigma (px) applied along each stroke
         simplify: Douglas-Peucker tolerance (px)
         min_length: Drop strokes shorter than this (px)
-        pen_width: Pen line width (px); wider lines get parallel passes, 0 disables
+        pen_width: Pen line width in mm; wider lines get parallel passes, 0 disables
         overlap: Fraction of the pen width that neighbouring passes overlap
         width_median: Median window (px) along the stroke for the measured ink width
         width_smooth: Gaussian sigma (px) along the stroke for the measured ink width
 
-    All lengths are in source image pixels (after the MAX_IMAGE_DIMENSION
+    Other lengths are in source image pixels (after the MAX_IMAGE_DIMENSION
     resize), whatever the upscale factor.
 
     Returns:
@@ -92,23 +96,10 @@ def process_image_to_svg(
     # Store original dimensions
     original_width, original_height = pil_image.size
 
-    # Extract DPI from image metadata
-    dpi = pil_image.info.get('dpi', None)
-
-    if dpi and dpi[0] > 0 and dpi[1] > 0:
-        # Use actual DPI to calculate physical dimensions
-        dpi_x, dpi_y = dpi
-        physical_width_mm = round(original_width / dpi_x * 25.4, 2)
-        physical_height_mm = round(original_height / dpi_y * 25.4, 2)
-        print(f"Processing image: {original_width}x{original_height} @ {dpi_x}x{dpi_y} DPI ({physical_width_mm}x{physical_height_mm}mm)")
-    else:
-        # No DPI info: fit within A4 (210x297mm) maintaining aspect ratio
-        dpi_x, dpi_y = 0, 0
-        A4_WIDTH_MM, A4_HEIGHT_MM = 210, 297
-        scale = min(A4_WIDTH_MM / original_width, A4_HEIGHT_MM / original_height)
-        physical_width_mm = round(original_width * scale, 2)
-        physical_height_mm = round(original_height * scale, 2)
-        print(f"Processing image: {original_width}x{original_height}, no DPI info, fit to A4 ({physical_width_mm}x{physical_height_mm}mm)")
+    # Physical size: the requested height, width from the image aspect
+    physical_height_mm = output_height * 10
+    physical_width_mm = round(physical_height_mm * original_width / original_height, 2)
+    print(f"Processing image: {original_width}x{original_height} -> {physical_width_mm}x{physical_height_mm}mm")
 
     # Flatten transparency onto white, then convert to grayscale
     if pil_image.mode in ('RGBA', 'LA', 'P'):
@@ -121,6 +112,10 @@ def process_image_to_svg(
     gray = resize_image_if_needed(gray)
     processing_width, processing_height = gray.size
 
+    # Real-world parameters are converted to processing pixels at this scale
+    mm_per_px = physical_height_mm / processing_height
+    pen_width_px = pen_width / mm_per_px
+
     trace_params = dict(
         threshold=threshold,
         invert=invert,
@@ -132,7 +127,7 @@ def process_image_to_svg(
         smoothing=smoothing,
         simplify=simplify,
         min_length=min_length,
-        pen_width=pen_width,
+        pen_width=pen_width_px,
         overlap=overlap,
         width_median=width_median,
         width_smooth=width_smooth,
@@ -159,6 +154,7 @@ def process_image_to_svg(
         height=processing_height,
         physical_width_mm=physical_width_mm,
         physical_height_mm=physical_height_mm,
+        stroke_width=pen_width_px,
     )
 
     if DEBUG:
@@ -176,9 +172,10 @@ def process_image_to_svg(
             "original_dimensions": [original_width, original_height],
             "processing_dimensions": [processing_width, processing_height],
             "physical_dimensions_mm": [physical_width_mm, physical_height_mm],
-            "dpi": [dpi_x, dpi_y],
+            "mm_per_px": mm_per_px,
             "stroke_count": len(strokes),
             "point_count": point_count,
-            "pen_width": pen_width,
+            "pen_width_mm": pen_width,
+            "pen_width_px": pen_width_px,
         },
     }
