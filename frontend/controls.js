@@ -39,7 +39,7 @@ window.params = {
   // side. pen_width above is the width the algorithm plans passes for; this
   // one only changes how the SVG is drawn, converted to pixels with the
   // mm_per_px the backend reports (see strokeWidthPx in svgtools.js).
-  stroke_width: 1.0,
+  stroke_width: 3.0,
   show_guide: true,
 
   // Actions
@@ -79,12 +79,14 @@ window.params = {
  * Set up dat.GUI controls
  */
 function setupGUI() {
-  // Wide enough that "Stroke Width Display (mm)" is not clipped in the label column
-  const gui = new dat.GUI({ width: 380 });
+  // Wide enough that "Stroke Width Display (mm)" has room in the label column
+  const gui = new dat.GUI({ width: 420 });
 
-  // All controls at top level
-  gui.add(params, 'output_height', 1, 100, 0.5).name('Output Height (cm)');
+  // All controls at top level. Real-world sizes first, then ink detection,
+  // then stroke cleanup, then the pass planning.
   gui.add(params, 'uploadImage').name('📁 Select Image');
+  gui.add(params, 'output_height', 1, 100, 0.5).name('Output Height (cm)');
+  gui.add(params, 'pen_width', 0, 5, 0.05).name('Stroke Width Input (mm)');
   gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
   gui.add(params, 'invert').name('Invert');
   gui.add(params, 'blur', 0, 5, 0.1).name('Blur (px)');
@@ -95,7 +97,6 @@ function setupGUI() {
   gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing (px)');
   gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify (px)');
   gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length (px)');
-  gui.add(params, 'pen_width', 0, 5, 0.05).name('Stroke Width Input (mm)');
   gui.add(params, 'overlap', 0, 0.9, 0.05).name('Pass Overlap');
   gui.add(params, 'width_median', 0, 15, 0.5).name('Width Median (px)');
   gui.add(params, 'width_smooth', 0, 10, 0.1).name('Width Smoothing (px)');

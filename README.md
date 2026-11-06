@@ -120,7 +120,7 @@ default 603 px tall image at 20 cm, one pixel is about 0.33 mm.)
 | Pass Overlap | 0.15 | Fraction of the pen width that neighbouring passes overlap |
 | Width Median (px) | 3 | Median window along each stroke for the measured ink width; removes junction spikes |
 | Width Smoothing (px) | 2.0 | Gaussian sigma along each stroke for the measured ink width; higher converges passes more gently |
-| Stroke Width Display (mm) | 1.0 | Line width the SVG is drawn/exported with; no reprocess needed |
+| Stroke Width Display (mm) | 3.0 | Line width the SVG is drawn/exported with; no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
 
 ## License
