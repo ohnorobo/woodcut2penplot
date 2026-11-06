@@ -10,6 +10,8 @@ const DEFAULT_IMAGE = 'chantarelle.jpg';
 
 // Parameters sent to the backend. The cached default response was generated
 // with exactly these values, so keep them in sync with process_image.py.
+// All lengths are in source image pixels, whatever the upscale factor;
+// despeckle is an area in source pixels squared.
 const TRACE_DEFAULTS = {
   threshold: 128,
   invert: false,
@@ -32,7 +34,8 @@ window.params = {
 
   // Display stroke width and guide layer visibility, applied client side.
   // pen_width above is the width the algorithm plans passes for; this one
-  // only changes how the SVG is drawn.
+  // only changes how the SVG is drawn. It is in SVG user units, which the
+  // viewBox makes equal to processing pixels, so it matches pen_width.
   stroke_width: 3.0,
   show_guide: true,
 
@@ -73,25 +76,25 @@ window.params = {
  * Set up dat.GUI controls
  */
 function setupGUI() {
-  // Wide enough that "Stroke Width Display" is not clipped in the label column
-  const gui = new dat.GUI({ width: 340 });
+  // Wide enough that "Stroke Width Display (px)" is not clipped in the label column
+  const gui = new dat.GUI({ width: 380 });
 
   // All controls at top level
   gui.add(params, 'uploadImage').name('📁 Select Image');
   gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
   gui.add(params, 'invert').name('Invert');
-  gui.add(params, 'blur', 0, 5, 0.1).name('Blur');
-  gui.add(params, 'despeckle', 0, 50, 1).name('Despeckle');
+  gui.add(params, 'blur', 0, 5, 0.1).name('Blur (px)');
+  gui.add(params, 'despeckle', 0, 50, 1).name('Despeckle (px²)');
   gui.add(params, 'upscale', 1, 6, 1).name('Upscale');
-  gui.add(params, 'prune', 0, 30, 0.5).name('Prune Spurs');
-  gui.add(params, 'max_turn', 0, 180, 5).name('Max Turn °');
-  gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing');
-  gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify');
-  gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length');
-  gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input');
+  gui.add(params, 'prune', 0, 30, 0.5).name('Prune Spurs (px)');
+  gui.add(params, 'max_turn', 0, 180, 5).name('Max Turn (°)');
+  gui.add(params, 'smoothing', 0, 5, 0.1).name('Smoothing (px)');
+  gui.add(params, 'simplify', 0, 2, 0.05).name('Simplify (px)');
+  gui.add(params, 'min_length', 0, 50, 0.5).name('Min Length (px)');
+  gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input (px)');
   gui.add(params, 'overlap', 0, 0.9, 0.05).name('Pass Overlap');
-  gui.add(params, 'width_median', 0, 15, 0.5).name('Width Median');
-  gui.add(params, 'width_smooth', 0, 10, 0.1).name('Width Smoothing');
+  gui.add(params, 'width_median', 0, 15, 0.5).name('Width Median (px)');
+  gui.add(params, 'width_smooth', 0, 10, 0.1).name('Width Smoothing (px)');
   gui.add(params, 'reprocess').name('🔄 Reprocess');
   gui.add(params, 'show_guide').name('Show Guide')
     .onChange(() => {
@@ -99,7 +102,7 @@ function setupGUI() {
         updateGuideVisibility();
       }
     });
-  gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width Display')
+  gui.add(params, 'stroke_width', 0.1, 10, 0.1).name('Stroke Width Display (px)')
     .onChange(() => {
       if (typeof updateStrokeWidths === 'function') {
         updateStrokeWidths();

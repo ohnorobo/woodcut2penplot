@@ -97,23 +97,27 @@ python -m backend.scripts.generate_default_cache
 
 ## Parameters
 
+All lengths are in source image pixels, whatever the upscale factor. (For an
+image with no DPI the SVG is fit to A4, so on the default 640 px wide image one
+pixel is about 0.33 mm.)
+
 | Parameter | Default | Effect |
 |-----------|---------|--------|
 | Threshold | 128 | Gray level below which a pixel is ink |
 | Invert | off | Trace light lines on a dark background |
-| Blur | 0 | Blur radius before thresholding; hides paper grain |
-| Despeckle | 1 | Ignore specks and holes up to this area (px) |
+| Blur (px) | 0 | Blur radius before thresholding; hides paper grain |
+| Despeckle (px²) | 1 | Ignore specks and holes up to this area |
 | Upscale | 3 | Internal resolution multiplier; smoother, slower |
-| Prune Spurs | 2 | Remove dead-end branches shorter than this (px) |
-| Max Turn | 60° | Largest turn allowed when joining strokes through a junction |
-| Smoothing | 1.0 | Smoothing along each stroke |
-| Simplify | 0.15 | Point reduction tolerance (px) |
-| Min Length | 1.5 | Drop strokes shorter than this (px) |
-| Stroke Width Input | 3.0 | Pen width the algorithm plans for (px); wider lines get parallel passes, 0 = plain centerlines |
+| Prune Spurs (px) | 2 | Remove dead-end branches shorter than this |
+| Max Turn (°) | 60 | Largest turn allowed when joining strokes through a junction |
+| Smoothing (px) | 1.0 | Gaussian sigma along each stroke |
+| Simplify (px) | 0.15 | Point reduction tolerance |
+| Min Length (px) | 1.5 | Drop strokes shorter than this |
+| Stroke Width Input (px) | 3.0 | Pen width the algorithm plans for; wider lines get parallel passes, 0 = plain centerlines |
 | Pass Overlap | 0.15 | Fraction of the pen width that neighbouring passes overlap |
-| Width Median | 3 | Median window (px) along each stroke for the measured ink width; removes junction spikes |
-| Width Smoothing | 2.0 | Smoothing sigma (px) along each stroke for the measured ink width; higher converges passes more gently |
-| Stroke Width Display | 3.0 | Line width the SVG is drawn/exported with, no reprocess needed |
+| Width Median (px) | 3 | Median window along each stroke for the measured ink width; removes junction spikes |
+| Width Smoothing (px) | 2.0 | Gaussian sigma along each stroke for the measured ink width; higher converges passes more gently |
+| Stroke Width Display (px) | 3.0 | Line width the SVG is drawn/exported with, in SVG user units = processing pixels; no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
 
 ## License

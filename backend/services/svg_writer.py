@@ -53,7 +53,8 @@ def strokes_to_svg(
         height: Height of the coordinate space in pixels (used for viewBox)
         physical_width_mm: Physical width in mm (used for width attribute)
         physical_height_mm: Physical height in mm (used for height attribute)
-        stroke_width: Initial stroke width, the frontend overrides this
+        stroke_width: Initial stroke width in SVG user units, which the viewBox
+            makes equal to processing pixels; the frontend overrides this
 
     Returns:
         SVG string with Inkscape-compatible layer structure

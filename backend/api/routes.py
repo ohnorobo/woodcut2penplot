@@ -36,17 +36,19 @@ async def process_image(
         threshold: Gray level 0-255, darker pixels count as ink (default: 128)
         invert: Trace light lines on a dark background (default: false)
         upscale: Internal resolution multiplier 1-6 (default: 3)
-        blur: Blur radius in pixels applied before thresholding (default: 0)
-        despeckle: Ignore specks and holes up to this area in pixels (default: 1)
-        prune: Remove dead-end branches shorter than this many pixels (default: 2)
+        blur: Blur radius in source pixels applied before thresholding (default: 0)
+        despeckle: Ignore specks and holes up to this area in source pixels squared (default: 1)
+        prune: Remove dead-end branches shorter than this many source pixels (default: 2)
         max_turn: Largest turn in degrees allowed through a junction (default: 60)
-        smoothing: Smoothing sigma along each stroke in pixels (default: 1.0)
-        simplify: Point reduction tolerance in pixels (default: 0.15)
-        min_length: Drop strokes shorter than this many pixels (default: 1.5)
-        pen_width: Pen line width in pixels; wider lines get parallel passes, 0 disables (default: 3)
+        smoothing: Smoothing sigma along each stroke in source pixels (default: 1.0)
+        simplify: Point reduction tolerance in source pixels (default: 0.15)
+        min_length: Drop strokes shorter than this many source pixels (default: 1.5)
+        pen_width: Pen line width in source pixels; wider lines get parallel passes, 0 disables (default: 3)
         overlap: Fraction of the pen width neighbouring passes overlap, 0-0.9 (default: 0.15)
-        width_median: Median window in pixels for the measured ink width (default: 3)
-        width_smooth: Smoothing sigma in pixels for the measured ink width (default: 2)
+        width_median: Median window in source pixels for the measured ink width (default: 3)
+        width_smooth: Smoothing sigma in source pixels for the measured ink width (default: 2)
+
+    All lengths are in source image pixels regardless of upscale.
 
     Returns:
         JSON response with the SVG string and metadata

@@ -71,17 +71,20 @@ def process_image_to_svg(
         threshold: Gray level 0-255, darker pixels count as ink
         invert: Trace light lines on a dark background instead
         upscale: Internal resolution multiplier
-        blur: Gaussian blur radius applied before thresholding
-        despeckle: Ignore specks and holes up to this area in pixels
-        prune: Remove dead-end branches shorter than this many pixels
+        blur: Gaussian blur radius (px) applied before thresholding
+        despeckle: Ignore specks and holes up to this area (px²)
+        prune: Remove dead-end branches shorter than this (px)
         max_turn: Largest turn in degrees the pen may make through a junction
-        smoothing: Gaussian sigma applied along each stroke
-        simplify: Douglas-Peucker tolerance in pixels
-        min_length: Drop strokes shorter than this many pixels
-        pen_width: Pen line width in pixels; wider lines get parallel passes, 0 disables
+        smoothing: Gaussian sigma (px) applied along each stroke
+        simplify: Douglas-Peucker tolerance (px)
+        min_length: Drop strokes shorter than this (px)
+        pen_width: Pen line width (px); wider lines get parallel passes, 0 disables
         overlap: Fraction of the pen width that neighbouring passes overlap
         width_median: Median window (px) along the stroke for the measured ink width
         width_smooth: Gaussian sigma (px) along the stroke for the measured ink width
+
+    All lengths are in source image pixels (after the MAX_IMAGE_DIMENSION
+    resize), whatever the upscale factor.
 
     Returns:
         Dict with svg and metadata
