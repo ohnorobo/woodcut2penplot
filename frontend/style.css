@@ -37,6 +37,7 @@ header {
     padding: 10px 20px;
     text-align: center;
     width: 100%;
+    box-sizing: border-box;
     position: fixed;
     top: 0;
     left: 0;
@@ -46,6 +47,21 @@ header {
 header h1 {
     margin: 0;
     font-size: 1.5rem;
+}
+
+/* GitHub link in the top right of the header */
+#github-link {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    color: white;
+    opacity: 0.8;
+    display: flex;
+}
+
+#github-link:hover {
+    opacity: 1;
 }
 
 /* Only the main dat.GUI panel; folders inside it also carry the .dg class */
