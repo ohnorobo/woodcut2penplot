@@ -107,8 +107,6 @@ default 603 px tall image at 20 cm, one pixel is about 0.33 mm.)
 |-----------|---------|--------|
 | Output Height (cm) | 20 | Height of the plotted output; width follows the image aspect |
 | Threshold | 128 | Gray level below which a pixel is ink |
-| Invert | off | Trace light lines on a dark background |
-| Blur (px) | 0 | Blur radius before thresholding; hides paper grain |
 | Despeckle (px²) | 1 | Ignore specks and holes up to this area |
 | Upscale | 3 | Internal resolution multiplier; smoother, slower |
 | Prune Spurs (px) | 2 | Remove dead-end branches shorter than this |
@@ -122,6 +120,9 @@ default 603 px tall image at 20 cm, one pixel is about 0.33 mm.)
 | Width Smoothing (px) | 2.0 | Gaussian sigma along each stroke for the measured ink width; higher converges passes more gently |
 | Stroke Width Display (mm) | 3.0 | Line width the SVG is drawn/exported with; no reprocess needed |
 | Show Guide | on | Show the red hairline guide layer in the preview |
+
+The API also accepts `invert` (trace light lines on dark) and `blur` (px,
+before thresholding), which are not in the UI.
 
 ## License
 

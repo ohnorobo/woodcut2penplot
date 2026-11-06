@@ -17,9 +17,7 @@ const DEFAULT_IMAGE = 'chantarelle.jpg';
 const TRACE_DEFAULTS = {
   output_height: 20,
   threshold: 128,
-  invert: false,
   upscale: 3,
-  blur: 0,
   despeckle: 1,
   prune: 2,
   max_turn: 60,
@@ -88,8 +86,6 @@ function setupGUI() {
   gui.add(params, 'output_height', 1, 100, 0.5).name('Output Height (cm)');
   gui.add(params, 'pen_width', 0, 5, 0.05).name('Stroke Width Input (mm)');
   gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
-  gui.add(params, 'invert').name('Invert');
-  gui.add(params, 'blur', 0, 5, 0.1).name('Blur (px)');
   gui.add(params, 'despeckle', 0, 50, 1).name('Despeckle (px²)');
   gui.add(params, 'upscale', 1, 6, 1).name('Upscale');
   gui.add(params, 'prune', 0, 30, 0.5).name('Prune Spurs (px)');
