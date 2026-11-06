@@ -59,7 +59,7 @@ def process_image_to_svg(
     smoothing: float = 1.0,
     simplify: float = 0.15,
     min_length: float = 1.5,
-    pen_width: float = 1.0,
+    pen_width: float = 3.0,
     overlap: float = 0.15,
     width_median: float = 3.0,
     width_smooth: float = 2.0,
@@ -70,8 +70,8 @@ def process_image_to_svg(
     Args:
         pil_image: PIL Image in any mode
         output_height: Height of the plotted output in cm; the width follows
-            the image aspect. This fixes the mm-per-pixel scale that the
-            real-world parameters (pen_width) are converted with
+            the image aspect. This fixes the mm-per-pixel scale, reported in
+            the metadata for the frontend's mm display width
         threshold: Gray level 0-255, darker pixels count as ink
         invert: Trace light lines on a dark background instead
         upscale: Internal resolution multiplier
@@ -82,12 +82,12 @@ def process_image_to_svg(
         smoothing: Gaussian sigma (px) applied along each stroke
         simplify: Douglas-Peucker tolerance (px)
         min_length: Drop strokes shorter than this (px)
-        pen_width: Pen line width in mm; wider lines get parallel passes, 0 disables
+        pen_width: Pen line width (px); wider lines get parallel passes, 0 disables
         overlap: Fraction of the pen width that neighbouring passes overlap
         width_median: Median window (px) along the stroke for the measured ink width
         width_smooth: Gaussian sigma (px) along the stroke for the measured ink width
 
-    Other lengths are in source image pixels (after the MAX_IMAGE_DIMENSION
+    All lengths are in source image pixels (after the MAX_IMAGE_DIMENSION
     resize), whatever the upscale factor.
 
     Returns:
@@ -112,9 +112,8 @@ def process_image_to_svg(
     gray = resize_image_if_needed(gray)
     processing_width, processing_height = gray.size
 
-    # Real-world parameters are converted to processing pixels at this scale
+    # Scale the frontend uses to convert its mm display width to pixels
     mm_per_px = physical_height_mm / processing_height
-    pen_width_px = pen_width / mm_per_px
 
     trace_params = dict(
         threshold=threshold,
@@ -127,7 +126,7 @@ def process_image_to_svg(
         smoothing=smoothing,
         simplify=simplify,
         min_length=min_length,
-        pen_width=pen_width_px,
+        pen_width=pen_width,
         overlap=overlap,
         width_median=width_median,
         width_smooth=width_smooth,
@@ -154,7 +153,7 @@ def process_image_to_svg(
         height=processing_height,
         physical_width_mm=physical_width_mm,
         physical_height_mm=physical_height_mm,
-        stroke_width=pen_width_px,
+        stroke_width=pen_width,
     )
 
     if DEBUG:
@@ -175,7 +174,6 @@ def process_image_to_svg(
             "mm_per_px": mm_per_px,
             "stroke_count": len(strokes),
             "point_count": point_count,
-            "pen_width_mm": pen_width,
-            "pen_width_px": pen_width_px,
+            "pen_width": pen_width,
         },
     }

@@ -10,10 +10,9 @@ const DEFAULT_IMAGE = 'chantarelle.jpg';
 
 // Parameters sent to the backend. The cached default response was generated
 // with exactly these values, so keep them in sync with process_image.py.
-// output_height (cm) sets the physical size and so the mm-per-pixel scale;
-// pen_width is in mm and converted at that scale. The other lengths are in
-// source image pixels, whatever the upscale factor; despeckle is an area in
-// source pixels squared.
+// output_height (cm) sets the physical size and so the mm-per-pixel scale
+// used for the display width. All other lengths are in source image pixels,
+// whatever the upscale factor; despeckle is an area in source pixels squared.
 const TRACE_DEFAULTS = {
   output_height: 20,
   threshold: 128,
@@ -24,7 +23,7 @@ const TRACE_DEFAULTS = {
   smoothing: 1.0,
   simplify: 0.15,
   min_length: 1.5,
-  pen_width: 1.0,
+  pen_width: 3.0,
   overlap: 0.15,
   width_median: 3.0,
   width_smooth: 2.0,
@@ -84,7 +83,7 @@ function setupGUI() {
   // then stroke cleanup, then the pass planning.
   gui.add(params, 'uploadImage').name('📁 Select Image');
   gui.add(params, 'output_height', 1, 100, 0.5).name('Output Height (cm)');
-  gui.add(params, 'pen_width', 0, 5, 0.05).name('Stroke Width Input (mm)');
+  gui.add(params, 'pen_width', 0, 10, 0.1).name('Stroke Width Input (px)');
   gui.add(params, 'threshold', 0, 255, 1).name('Threshold');
   gui.add(params, 'despeckle', 0, 50, 1).name('Despeckle (px²)');
   gui.add(params, 'upscale', 1, 6, 1).name('Upscale');

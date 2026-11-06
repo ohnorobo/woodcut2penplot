@@ -24,7 +24,7 @@ async def process_image(
     smoothing: float = Form(1.0),
     simplify: float = Form(0.15),
     min_length: float = Form(1.5),
-    pen_width: float = Form(1.0),
+    pen_width: float = Form(3.0),
     overlap: float = Form(0.15),
     width_median: float = Form(3.0),
     width_smooth: float = Form(2.0),
@@ -45,12 +45,12 @@ async def process_image(
         smoothing: Smoothing sigma along each stroke in source pixels (default: 1.0)
         simplify: Point reduction tolerance in source pixels (default: 0.15)
         min_length: Drop strokes shorter than this many source pixels (default: 1.5)
-        pen_width: Pen line width in mm; wider lines get parallel passes, 0 disables (default: 1.0)
+        pen_width: Pen line width in source pixels; wider lines get parallel passes, 0 disables (default: 3)
         overlap: Fraction of the pen width neighbouring passes overlap, 0-0.9 (default: 0.15)
         width_median: Median window in source pixels for the measured ink width (default: 3)
         width_smooth: Smoothing sigma in source pixels for the measured ink width (default: 2)
 
-    Other lengths are in source image pixels regardless of upscale.
+    All lengths are in source image pixels regardless of upscale.
 
     Returns:
         JSON response with the SVG string and metadata
